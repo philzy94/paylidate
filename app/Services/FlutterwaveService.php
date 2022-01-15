@@ -2,11 +2,6 @@
 
 namespace App\Services;
 
-use App\Mail\RemindVerifyEmail;
-use App\User;
-use Mail;
-
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 
 class FlutterwaveService
