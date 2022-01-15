@@ -86,7 +86,7 @@ class PaymentController extends Controller
     //    ]);
 
         $user = new User;
-        $response = $user->getTransaction($request->transaction_id);
+        $response = $this->flutterwaveService->getTransaction($request->transaction_id);
 
         // create an instance of UserCard and insert 'first_6digits','last_4digits','issuer','country','type','token','expiry'
         $userCard = new UserCard();
