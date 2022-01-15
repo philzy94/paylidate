@@ -11,6 +11,7 @@ use App\Payment;
 use App\UserCard;
 use App\User;
 use App\VirtualCard;
+use App\Services\FlutterwaveService;
 use App\Product;
 use Auth;
 use stdClass;
@@ -22,6 +23,12 @@ use stdClass;
  */
 class PaymentController extends Controller
 {
+    protected $flutterwaveService;
+
+    public function __construct(){
+
+        $this->flutterwaveService = new FlutterwaveService;
+    }
     /**
      * Get all payments.
      *
@@ -95,10 +102,12 @@ class PaymentController extends Controller
 
         // get card_id from VirtualCard where id is equal to user-id
         $virtualCard = new VirtualCard;
+
+
         $card = $virtualCard->where('user_id', Auth::user()->id)->where('default', 1)->first('card_id');
 
         // fund virtual card with payment
-        $virtualCard->fundVirtualCard($card_id = $card->card_id, $amount = $response['data']['amount'], $debit_currency = $response['data']['currency']);
+        $this->flutterwaveService->fundVirtualCard($card_id = $card->card_id, $amount = $response['data']['amount'], $debit_currency = $response['data']['currency']);
 
         // Mail::to(Auth::user())->send(new AddMoneyMail(Auth::user()->name, $response['data']['amount'], $response['data']['currency']));
 
@@ -137,12 +146,12 @@ class PaymentController extends Controller
         $get_virtual_card_id = $virtual_card->where('user_id', $user->id)->where('default', 1)->first('card_id');
 
         // get virtual card balance
-        $get_virtual_card = $virtual_card->getvirtualCard($get_virtual_card_id->card_id);
+        $get_virtual_card = $this->flutterwaveService->getvirtualCard($get_virtual_card_id->card_id);
 
         if ($request->amount <= $get_virtual_card['data']['amount']) {
 
             // withdraw from virtual card
-            $withdraw_from_card = $virtual_card->withdrawFromVirtualCard($card_id =  $get_virtual_card_id->card_id, $amount = $request->amount);
+            $withdraw_from_card = $this->flutterwaveService->withdrawFromVirtualCard($card_id =  $get_virtual_card_id->card_id, $amount = $request->amount);
 
             // get product
             $product = Product::where('slug', $request->slug)->first('id');
@@ -252,19 +261,8 @@ class PaymentController extends Controller
         $customizations->description = "";
         $customizations->logo = "";
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.env('FLW_SECRET_KEY')
-        ])->post(env('FLW_BASE_URL').'/v3/payments', [
-            "tx_ref" => $user->name."-tx-".time(),
-            "amount" => $request->amount,
-            "currency" => $request->currency,
-            "redirect_url" => $request->redirect_url,
-            "payment_options" => "card",
-            "meta" => $meta,
-            "customer" => $customer,
-            "customizations" => $customizations
-        ]);
-
+        $response = $this->flutterwaveService->getPaymentLink($user->name, $request->amount, $request->currency, $request->redirect_url,  $customer, $customizations);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'success',
@@ -273,22 +271,22 @@ class PaymentController extends Controller
     }
 
     public function get_rate(Request $request){
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.env('FLW_SECRET_KEY')
-            ])->get(env('FLW_BASE_URL').'/v3/transfers/rates', [
-                'amount' => '1',
-                'destination_currency' => 'USD',
-                'source_currency' => 'NGN'
-            ]);
-
-        return $response;
+        $response = $this->flutterwaveService->getRate($request->amount, $request->destination_currency, $request->source_currency);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'success',
+            'data' => $response['data']
+        ]);
     }
 
     public function banks(Request $request){
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.env('FLW_SECRET_KEY')
-            ])->get(env('FLW_BASE_URL').'/v3/banks/NG');
+        $response = $this->flutterwaveService->banks();
 
-        return $response;
+        return response()->json([
+            'status' => 'success',
+            'message' => 'success',
+            'data' => $response['data']
+        ]);
     }
 }

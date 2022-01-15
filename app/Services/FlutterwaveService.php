@@ -59,4 +59,46 @@ class FlutterwaveService
         return $response;
     }
 
+
+
+    public function getPaymentLink($name, $amount, $currency, $redirect_url, $meta, $customer, $customizations){
+       
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer '.env('FLW_SECRET_KEY')
+        ])->post(env('FLW_BASE_URL').'/v3/payments', [
+            "tx_ref" => $name."-tx-".time(),
+            "amount" => $amount,
+            "currency" => $currency,
+            "redirect_url" => $redirect_url,
+            "payment_options" => "card",
+            "meta" => $meta,
+            "customer" => $customer,
+            "customizations" => $customizations
+        ]);
+
+        return $response;
+
+    }
+
+
+    public function getRate($amount, $destination_currency, $source_currency){
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer '.env('FLW_SECRET_KEY')
+            ])->get(env('FLW_BASE_URL').'/v3/transfers/rates', [
+                'amount' => $amount,
+                'destination_currency' => $destination_currency,
+                'source_currency' => $source_currency
+            ]);
+
+        return $response;
+    }
+
+    public function banks(){
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer '.env('FLW_SECRET_KEY')
+            ])->get(env('FLW_BASE_URL').'/v3/banks/NG');
+
+        return $response;
+    }
+
 }
