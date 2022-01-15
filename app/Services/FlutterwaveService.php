@@ -101,4 +101,17 @@ class FlutterwaveService
         return $response;
     }
 
+    public function createVirtualAccount($email, $is_permanent, $name){
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer '.env('FLW_SECRET_KEY')
+        ])->post(env('FLW_BASE_URL').'/v3/virtual-account-numbers', [
+            "email" => $email,
+            "is_permanent" => $is_permanent,
+            "tx_ref" => $name.'-'.time(),
+            "narration" => $name,
+        ]);
+
+        return $response;
+    }
+
 }
