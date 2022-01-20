@@ -152,7 +152,7 @@ class FlutterwaveService
         
          $response = Http::withHeaders([
             "Content-Type"=> "application/json"
-        ])->post('https://ravesandboxapi.flutterwave.com/flwv3-pug/getpaidx/api/charge', [
+        ])->post(env('RAVE_BASE_URL') . '/flwv3-pug/getpaidx/api/charge', [
             'PBFPubKey' => env('FLW_PUBLIC_KEY'),
             'client' => $post_enc,
             'alg' => '3DES-24'
@@ -172,7 +172,7 @@ class FlutterwaveService
 
         $response = Http::withHeaders([
             "Content-Type"=> "application/json"
-        ])->post('https://ravesandboxapi.flutterwave.com/flwv3-pug/getpaidx/api/validatecharge', [
+        ])->post(env('RAVE_BASE_URL') . '/flwv3-pug/getpaidx/api/validatecharge', [
             "PBFPubKey" => env('FLW_PUBLIC_KEY'),
             "transaction_reference" => $flwRef,
             "otp" => $otp
@@ -193,7 +193,7 @@ class FlutterwaveService
 
         $response = Http::withHeaders([
             "Content-Type"=> "application/json"
-        ])->post('https://ravesandboxapi.flutterwave.com/flwv3-pug/getpaidx/api/validatecharge', [
+        ])->post(env('RAVE_BASE_URL') . "/flwv3-pug/getpaidx/api/v2/verify", [
             'SECKEY' => env('FLW_SECRET_KEY'),
             "txref" => $txRef,
         ]);
