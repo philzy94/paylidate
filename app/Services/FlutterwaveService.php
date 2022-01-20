@@ -116,4 +116,95 @@ class FlutterwaveService
 
         return $response;
     }
+
+
+    function getKey($seckey)
+    {
+        $hashedkey = md5($seckey);
+        $hashedkeylast12 = substr($hashedkey, -12);
+
+        $seckeyadjusted = str_replace("FLWSECK-", "", $seckey);
+        $seckeyadjustedfirst12 = substr($seckeyadjusted, 0, 12);
+
+        $encryptionkey = $seckeyadjustedfirst12 . $hashedkeylast12;
+        return $encryptionkey;
+    }
+
+    function encrypt3Des($data, $key)
+    {
+        $encData = openssl_encrypt($data, 'DES-EDE3', $key, OPENSSL_RAW_DATA);
+        return base64_encode($encData);
+    }
+
+    function payviacard($data){
+    
+        error_reporting(E_ALL);
+        ini_set('display_errors',1);
+        
+        
+        $SecKey = env('FLW_SECRET_KEY');
+        
+        $key = getKey($SecKey); 
+        
+        $dataReq = json_encode($data);
+        
+        $post_enc = encrypt3Des( $dataReq, $key );
+        
+         $response = Http::withHeaders([
+            "Content-Type"=> "application/json"
+        ])->post('https://ravesandboxapi.flutterwave.com/flwv3-pug/getpaidx/api/charge', [
+            'PBFPubKey' => env('FLW_PUBLIC_KEY'),
+            'client' => $post_enc,
+            'alg' => '3DES-24'
+        ]);
+        
+        $response = json_decode($response, true);
+
+        return $response;
+    }
+
+    public function validate_payment($flwRef, $otp)
+    {
+
+        //validate Transaction with OTP
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
+
+        $response = Http::withHeaders([
+            "Content-Type"=> "application/json"
+        ])->post('https://ravesandboxapi.flutterwave.com/flwv3-pug/getpaidx/api/validatecharge', [
+            "PBFPubKey" => env('FLW_PUBLIC_KEY'),
+            "transaction_reference" => $flwRef,
+            "otp" => $otp
+        ]);
+
+        
+        $response = json_decode($response, true);
+
+        return $response;
+
+    }
+
+    public function verify_payment($txRef)
+    {
+        //verify payment
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
+
+        $response = Http::withHeaders([
+            "Content-Type"=> "application/json"
+        ])->post('https://ravesandboxapi.flutterwave.com/flwv3-pug/getpaidx/api/validatecharge', [
+            'SECKEY' => env('FLW_SECRET_KEY'),
+            "txref" => $txRef,
+        ]);
+       
+
+        $response = json_decode($response, true);
+
+        return $response;
+
+    }
+
+
+
 }

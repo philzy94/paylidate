@@ -270,6 +270,106 @@ class PaymentController extends Controller
         ]);
     }
 
+
+    // Initiate card payment
+    public function pay_with_card(Request $request){
+        $data = array(
+        
+            'PBFPubKey' => env('FLW_PUBLIC_KEY'),
+            'cardno' => $request->cardno,
+            'currency' => $request->currency,
+            'country' => $request->country,
+            'cvv' => $request->cvv,
+            'amount' => $request->amount,
+            'expiryyear' => $request->expiryyear,
+            'expirymonth' => $request->expirymonth,
+            'pin' => $request->pin,
+            'email' => Auth::user()->email,
+            'phonenumber' => Auth::user()->phone,
+            "firstname" => Auth::user()->name,
+            "lastname" => '',
+            'txRef' => '5M-' . Auth::user()->id . date('dmyHis'),
+            'meta' => $request->meta,
+            'redirect_url' => 'https://paylidate.com/receivepayment'          
+        
+        );
+
+        $response = $this->flutterwaveService->payviacard($data);
+
+        if($response["status"] == "success" && $response["data"]["suggested_auth"] == "PIN") {
+  
+            $new_data = [...$data];
+            $new_data["suggested_auth"] = "PIN";
+            $response = $this->flutterwaveService->payviacard(...$data,);
+
+                    return response()->json([
+                    'status' => 'success',
+                    'message' => 'Payment initiated successfully',
+                    'data' => $response['data']
+                ]);                
+            
+         
+        }
+        
+        else if ($response["status"] == "success" && $response["data"]["suggested_auth"] == "NOAUTH_INTERNATIONAL") {
+            
+            $new_data = [...$data];
+            $new_data["suggested_auth"] = "NOAUTH_INTERNATIONAL";
+            $new_data["billingzip"] = "07205";
+            $new_data["billingcity"] = "Hillside";
+            $new_data["billingaddress"] = "470 Mundet PI";
+            $new_data["billingstate"] = "NJ";
+            $new_data["billingcountry"] = "US";
+
+            
+            $response = $this->flutterwaveService->payviacard($new_data);
+
+            return response()->json([
+            'status' => 'success',
+            'message' => 'Payment initiated successfully',
+            'data' => $response['data']
+        ]);
+
+        }
+        
+        else if($response["status"] == "success" && $response["data"]['authurl'] != 'N/A') {
+          
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Payment initiated successfully',
+                'data' => $response['data']
+            ]);
+          
+        }
+        
+        else {
+          throw new Exception('Error while trying to initiate payment');
+        }
+    }
+
+    
+    public function validate_payment(Request $request){
+        $response = $this->flutterwaveService->validate_payment($request->flwRef, $request->otp);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Payment validation successful',
+            'data' => $response['data']
+        ]);
+
+    }
+
+    public function verify_payment(Request $request){
+
+        $response = $this->flutterwaveService->validate_payment($request->$txRef);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'success',
+            'data' => $response['data']
+        ]);
+    }
+
     public function get_rate(Request $request){
         $response = $this->flutterwaveService->getRate($request->amount, $request->destination_currency, $request->source_currency);
         
