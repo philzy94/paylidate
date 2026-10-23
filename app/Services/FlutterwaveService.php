@@ -80,7 +80,7 @@ class FlutterwaveService
         return $response;
     }
 
-
+ 
     public function getRate($amount, $destination_currency, $source_currency)
     {
         $response = Http::withHeaders([
