@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ApiAuthTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function testHomePageLoads()
     {
         $this->get('/')->assertStatus(200);

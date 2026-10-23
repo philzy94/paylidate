@@ -4,12 +4,12 @@ namespace App;
 
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factory;
 
 class Product extends Model
 {
-    use HasSlug;
+    use HasFactory, HasSlug;
 
     protected $fillable = [
         'user_id', 'name', 'image', 'product_number', 'referral_amount', 'slug', 'price', 'quantity', 'type', 'transaction_type',

@@ -15,8 +15,8 @@ class FlutterwaveService
     public function virtualCard($currency, $amount, $name)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->post(env('FLW_BASE_URL') . '/v3/virtual-cards', [
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->post(config('services.flutterwave.base_url') . '/v3/virtual-cards', [
             "currency" => $currency,
             "amount" => $amount,
             "billing_name" => $name
@@ -29,8 +29,8 @@ class FlutterwaveService
     public function getvirtualCard($card_id)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->get(env('FLW_BASE_URL') . '/v3/virtual-cards');
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->get(config('services.flutterwave.base_url') . '/v3/virtual-cards');
 
         return $response;
     }
@@ -38,8 +38,8 @@ class FlutterwaveService
     public function withdrawFromVirtualCard($card_id, $amount)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->post(env('FLW_BASE_URL') . '/v3/virtual-cards/' . $card_id . '/withdraw', [
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->post(config('services.flutterwave.base_url') . '/v3/virtual-cards/' . $card_id . '/withdraw', [
             "amount" => $amount,
         ]);
 
@@ -50,8 +50,8 @@ class FlutterwaveService
     public function fundVirtualCard($card_id, $amount, $debit_currency = 'NGN')
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->post(env('FLW_BASE_URL') . '/v3/virtual-cards/' . $card_id . '/fund', [
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->post(config('services.flutterwave.base_url') . '/v3/virtual-cards/' . $card_id . '/fund', [
             "amount" => $amount,
             "debit_currency" => $debit_currency,
         ]);
@@ -65,8 +65,8 @@ class FlutterwaveService
     {
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->post(env('FLW_BASE_URL') . '/v3/payments', [
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->post(config('services.flutterwave.base_url') . '/v3/payments', [
             "tx_ref" => $name . "-tx-" . time(),
             "amount" => $amount,
             "currency" => $currency,
@@ -84,8 +84,8 @@ class FlutterwaveService
     public function getRate($amount, $destination_currency, $source_currency)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->get(env('FLW_BASE_URL') . '/v3/transfers/rates', [
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->get(config('services.flutterwave.base_url') . '/v3/transfers/rates', [
             'amount' => $amount,
             'destination_currency' => $destination_currency,
             'source_currency' => $source_currency
@@ -97,8 +97,8 @@ class FlutterwaveService
     public function banks()
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->get(env('FLW_BASE_URL') . '/v3/banks/NG');
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->get(config('services.flutterwave.base_url') . '/v3/banks/NG');
 
         return $response;
     }
@@ -106,8 +106,8 @@ class FlutterwaveService
     public function verifyBankAccountNumber($account_num, $bank_code)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->post(env('FLW_BASE_URL') . '/v3/accounts/resolve', [
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->post(config('services.flutterwave.base_url') . '/v3/accounts/resolve', [
             "account_number" => $account_num,
             "account_bank" => $bank_code,
 
@@ -121,13 +121,13 @@ class FlutterwaveService
         try {
             $header =  array(
                 'Content-Type: application/json',
-                'Authorization: Bearer ' . env('FLW_SECRET_KEY')
+                'Authorization: Bearer ' . config('services.flutterwave.secret_key')
             );
             $arr = array('email' => $email, 'is_permanent' => true, 'bvn' => $bvn, 'tx_ref' => $tx_ref, 'narration' => $name,);
             $curl = curl_init();
             $param = json_encode($arr);
             curl_setopt_array($curl, array(
-                CURLOPT_URL => env('FLW_BASE_URL') . '/v3/virtual-account-numbers',
+                CURLOPT_URL => config('services.flutterwave.base_url') . '/v3/virtual-account-numbers',
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
@@ -148,8 +148,8 @@ class FlutterwaveService
     public function getVirtualAccount($order_ref)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->post(env('FLW_BASE_URL') . '/v3/virtual-account-numbers/' . $order_ref);
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->post(config('services.flutterwave.base_url') . '/v3/virtual-account-numbers/' . $order_ref);
 
         return $response;
     }
@@ -157,8 +157,8 @@ class FlutterwaveService
     public function getTransaction($transaction_id)
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-        ])->get(env('FLW_BASE_URL') . '/v3/transactions/' . $transaction_id . '/verify/');
+            'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+        ])->get(config('services.flutterwave.base_url') . '/v3/transactions/' . $transaction_id . '/verify/');
 
         return $response;
     }
@@ -189,7 +189,7 @@ class FlutterwaveService
         ini_set('display_errors', 1);
 
 
-        $SecKey = env('FLW_SECRET_KEY');
+        $SecKey = config('services.flutterwave.secret_key');
 
         $key = $this->getKey($SecKey);
 
@@ -199,8 +199,8 @@ class FlutterwaveService
 
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
-        ])->post(env('RAVE_BASE_URL') . '/flwv3-pug/getpaidx/api/charge', [
-            'PBFPubKey' => env('FLW_PUBLIC_KEY'),
+        ])->post(config('services.flutterwave.rave_base_url') . '/flwv3-pug/getpaidx/api/charge', [
+            'PBFPubKey' => config('services.flutterwave.public_key'),
             'client' => $post_enc,
             'alg' => '3DES-24'
         ]);
@@ -219,8 +219,8 @@ class FlutterwaveService
 
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
-        ])->post(env('RAVE_BASE_URL') . '/flwv3-pug/getpaidx/api/validatecharge', [
-            "PBFPubKey" => env('FLW_PUBLIC_KEY'),
+        ])->post(config('services.flutterwave.rave_base_url') . '/flwv3-pug/getpaidx/api/validatecharge', [
+            "PBFPubKey" => config('services.flutterwave.public_key'),
             "transaction_reference" => $flwRef,
             "otp" => $otp
         ]);
@@ -239,8 +239,8 @@ class FlutterwaveService
 
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
-        ])->post(env('RAVE_BASE_URL') . "/flwv3-pug/getpaidx/api/v2/verify", [
-            'SECKEY' => env('FLW_SECRET_KEY'),
+        ])->post(config('services.flutterwave.rave_base_url') . "/flwv3-pug/getpaidx/api/v2/verify", [
+            'SECKEY' => config('services.flutterwave.secret_key'),
             "txref" => $txRef,
         ]);
 
@@ -256,8 +256,8 @@ class FlutterwaveService
         //return env('APP_NAME');
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . env('FLW_SECRET_KEY')
-            ])->post(env('FLW_BASE_URL') . '/v3/transfers', [
+                'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
+            ])->post(config('services.flutterwave.base_url') . '/v3/transfers', [
 
                 "account_bank" => $param["account_bank"],
                 "account_number" => $param["account_number"],

@@ -1,20 +1,27 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
 use App\Payment;
-use Faker\Generator as Faker;
+use App\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-$factory->define(Payment::class, function (Faker $faker) {
-    return [
-        // 'user_id' => $this->faker->name(),
-        'user_id' => rand(1, 4),
-        'transaction_id' => rand(1, 50),
-        'payment_ref' => $this->faker->unique()->word().'P_REF'.'Goodt_Guy',
-        'payment_id' => $this->faker->unique()->word().'P_ID'.'Badt_Guy', // password
-        'verified' => true,
-        'balance_after' => 200,
-        // 'balance_before' => Str::random(10),
+/**
+ * @extends Factory<Payment>
+ */
+class PaymentFactory extends Factory
+{
+    protected $model = Payment::class;
 
-    ];
-});
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'payment_ref' => $this->faker->uuid(),
+            'payment_id' => (string) $this->faker->unique()->numberBetween(100000, 999999),
+            'verified' => true,
+            'balance_before' => 0,
+            'balance_after' => 200,
+        ];
+    }
+}

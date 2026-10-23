@@ -5,12 +5,12 @@ Flutterwave, and funds are held in a wallet until the buyer confirms
 fulfilment. Disputes, refunds, referrals and withdrawals are handled by the
 same API.
 
-Built with Laravel 7, Laravel Passport (auth), Flutterwave (payments) and
+Built with Laravel 12, Laravel Passport (auth), Flutterwave (payments) and
 Sentry (error reporting).
 
 ## Requirements
 
-- PHP 7.4+ (with `mbstring`, `pdo`, `curl`, `bcmath`)
+- PHP 8.2+ (with `mbstring`, `pdo`, `curl`, `bcmath`)
 - Composer
 - MySQL (SQLite in-memory is used for tests)
 
@@ -22,11 +22,21 @@ cp .env.example .env
 php artisan key:generate
 # fill in DB_*, FLW_PUBLIC_KEY, FLW_SECRET_KEY, TWILIO_* and mail settings in .env
 php artisan migrate
-php artisan passport:install
+php artisan passport:keys
+php artisan passport:client --personal
 ```
 
-Serve locally with `php artisan serve`. All endpoints live under `/api`.
-Generated API docs: `php artisan apidoc:generate`.
+Serve locally with `php artisan serve`, or run everything in containers:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+docker compose exec app php artisan passport:keys
+```
+
+The API is then on http://localhost:8000. All endpoints live under `/api`.
 
 ## Architecture
 
@@ -44,7 +54,7 @@ New business logic belongs in a service, not in a controller
 ## Development
 
 ```bash
-composer lint   # PSR-12 via phpcs (phpcs.xml lists the files that are enforced)
+composer lint   # PSR-12 via phpcs (phpcs.xml lists the paths that are enforced)
 composer test   # PHPUnit
 ```
 
