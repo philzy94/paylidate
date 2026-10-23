@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\ThirdPartyApi;
 
 use App\Referer;
 use Illuminate\Http\Request;

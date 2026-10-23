@@ -30,4 +30,17 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'flutterwave' => [
+        'public_key' => env('FLW_PUBLIC_KEY'),
+        'secret_key' => env('FLW_SECRET_KEY'),
+        'base_url' => env('FLW_BASE_URL', 'https://api.flutterwave.com'),
+        'rave_base_url' => env('RAVE_BASE_URL', 'https://ravesandboxapi.flutterwave.com'),
+    ],
+
+    'twilio' => [
+        'sid' => env('TWILIO_SID'),
+        'token' => env('TWILIO_AUTH_TOKEN'),
+        'number' => env('TWILIO_NUMBER'),
+    ],
+
 ];

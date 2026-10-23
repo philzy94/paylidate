@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-require __DIR__ . '/twilio-php-main/src/Twilio/autoload.php';
-
 use App\Instandpay;
 use App\User;
 use Illuminate\Http\Request;
@@ -164,9 +162,9 @@ class InstandpayController extends Controller
 
             $body = 'Paylidate payment of NGN' . $input['amount'] . ' from ' . $input['sender_name'] . '. Visit https://paylidate.com/recieve-instant-funds/' . $input['link_token'] . ' to withdraw. Your withdrawal pin is ' . $input['withdrawal_pin'] . '. Tracking id ' . $input['tracking_id'];
 
-            $account_sid = getenv("TWILIO_SID");
-            $auth_token = getenv("TWILIO_AUTH_TOKEN");
-            $twilio_number = getenv("TWILIO_NUMBER");
+            $account_sid = config('services.twilio.sid');
+            $auth_token = config('services.twilio.token');
+            $twilio_number = config('services.twilio.number');
 
             $client = new Client($account_sid, $auth_token);
 

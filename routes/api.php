@@ -3,7 +3,6 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ThirdPartyApiMiddleware;
-use PHPUnit\Util\Getopt;
 
 /*
 |--------------------------------------------------------------------------
@@ -182,7 +181,7 @@ Route::group(['prefix' => 'api'], function () {
 
             Route::middleware([ThirdPartyApiMiddleware::class])->group(function () {
 
-                Route::get('get-users', 'AccountController@index');
+                Route::get('get-users', '\App\Http\Controllers\UserController@index');
             });
         });
     });

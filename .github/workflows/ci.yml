@@ -13,8 +13,8 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
-          extensions: mbstring, pdo_sqlite, bcmath, curl
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite, bcmath, curl, zip
           coverage: none
 
       - name: Cache composer
@@ -24,19 +24,25 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install dependencies
-        run: composer install --no-interaction --no-progress --no-scripts
+        run: composer install --no-interaction --no-progress
 
       - name: Prepare environment
         run: |
           cp .env.example .env
-          php artisan key:generate
+          php artisan key:generate --ansi
 
       - name: Lint
         run: vendor/bin/phpcs
 
       - name: Audit dependencies
         run: composer audit
-        continue-on-error: true
 
       - name: Tests
         run: vendor/bin/phpunit
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t paylidate .

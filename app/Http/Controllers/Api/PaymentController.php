@@ -181,7 +181,7 @@ class PaymentController extends Controller
 
         $data = array(
 
-            'PBFPubKey' => env('FLW_PUBLIC_KEY'),
+            'PBFPubKey' => config('services.flutterwave.public_key'),
             'cardno' => $request->cardno,
             'currency' => $request->currency,
             'country' => $request->country,
@@ -308,13 +308,13 @@ class PaymentController extends Controller
         }
         try {
             $response = Transaction::where('user_id', $user->id)
-                        ->orderBy('desc')
+                        ->orderByDesc('created_at')
                         ->get();
 
             return response()->json([
                 'status'    => 'success',
                 'message'   => 'success',
-                'data'      => $response['data']
+                'data'      => $response
             ], 200);
 
         } 
