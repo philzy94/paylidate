@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Http;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasApiTokens, Notifiable;
+    use HasFactory;
+    use HasApiTokens;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.

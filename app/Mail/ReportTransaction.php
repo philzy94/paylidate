@@ -9,7 +9,8 @@ use Illuminate\Queue\SerializesModels;
 
 class ReportTransaction extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * Create a new message instance.
@@ -21,7 +22,7 @@ class ReportTransaction extends Mailable
     public $report;
     public $transaction_ref;
 
-    public function __construct($user_name, $transaction_ref, $type,  $report = null )
+    public function __construct($user_name, $transaction_ref, $type, $report = null)
     {
 
         $this->user_name = $user_name;
@@ -40,5 +41,4 @@ class ReportTransaction extends Mailable
         return $this->from('hello@paylidate.com', 'Paylidate')
         ->subject('Report Transaction')->view('mails.report_transaction');
     }
-
 }

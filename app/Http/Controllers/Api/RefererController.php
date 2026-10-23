@@ -8,8 +8,6 @@ use App\Http\Controllers\Controller;
 
 class RefererController extends Controller
 {
-
-
     public function index()
     {
 
@@ -24,8 +22,6 @@ class RefererController extends Controller
             'message' => 'success',
             'data' => [$referal_bonus, $user->bank]
         ]);
-
-        //$transactions = Referer::with('transaction')->orderBy('created_at', 'desc')->get();
     }
 
     /**
@@ -83,7 +79,6 @@ class RefererController extends Controller
         $user = auth('api')->user();
 
         if ($user->id != $request->user_id) {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Not allow',

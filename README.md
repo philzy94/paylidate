@@ -54,7 +54,7 @@ New business logic belongs in a service, not in a controller
 ## Development
 
 ```bash
-composer lint   # PSR-12 via phpcs (phpcs.xml lists the paths that are enforced)
+composer lint   # PSR-12 via phpcs (whole app, routes, tests and config)
 composer test   # PHPUnit
 ```
 

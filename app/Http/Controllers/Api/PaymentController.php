@@ -202,7 +202,6 @@ class PaymentController extends Controller
 
 
         try {
-
             $response = $this->flutterwaveService->payviacard($data);
 
 
@@ -235,7 +234,6 @@ class PaymentController extends Controller
             }
 
             if ($response["status"] == "success" && $response["data"]["suggested_auth"] == "NOAUTH_INTERNATIONAL") {
-
                 throw ValidationException::withMessages([
                     'error' => ['This card can not be charge']
                 ]);
@@ -300,7 +298,7 @@ class PaymentController extends Controller
     public function payemnts_received()
     {
         $user = auth('api')->user();
-        if(!$user){
+        if (!$user) {
             return response()->json([
                 'status'    => 'error',
                 'message'   => 'Please Log in'
@@ -316,9 +314,8 @@ class PaymentController extends Controller
                 'message'   => 'success',
                 'data'      => $response
             ], 200);
-
-        } 
-        catch(\Exception $e) {
+        } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status'    => 'success',
                 'message'   => 'An error occured. Please try again'

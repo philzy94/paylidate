@@ -8,8 +8,10 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
 class ForgotPasswordMail extends Mailable
-{    use Queueable, SerializesModels;
-    
+{
+    use Queueable;
+     use SerializesModels;
+
     public $user;
     public $passwordResetLink;
     /**

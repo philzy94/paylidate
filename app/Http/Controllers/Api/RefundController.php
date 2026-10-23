@@ -6,11 +6,7 @@ use App\Refund;
 use Illuminate\Http\Request;
 use App\Services\FlutterwaveService;
 use App\Http\Controllers\Controller;
-//use App\Mail\RequestRefund;
-//use Illuminate\Support\Facades\Mail;
-//use App\Bank;
 use App\Payment;
-//use Auth;
 
 class RefundController extends Controller
 {
@@ -24,7 +20,7 @@ class RefundController extends Controller
     public function __construct()
     {
 
-        $this->flutterwaveService = new FlutterwaveService;
+        $this->flutterwaveService = new FlutterwaveService();
     }
 
 
@@ -40,7 +36,11 @@ class RefundController extends Controller
                 'data' => $RefundRequests
             ]);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
@@ -79,10 +79,6 @@ class RefundController extends Controller
 
             $refund = Refund::create($input);
 
-            //Mail::to($user->email)->send(new RequestWithdrawal($user->name, $request->transaction_id));
-            //Mail::to('hello@paylidate.com')->send(new RequestWithdrawal('Admin', $request->transaction_id));
-            //Mail::to('holyphilzy@gmail.com')->send(new RequestWithdrawal('Admin', $request->transaction_id));
-            //Mail::to('sirlawattah@gmail.com')->send(new RequestWithdrawal('Lawrence', $request->transaction_id));
 
             return response()->json([
                 'status' => 'success',
@@ -90,20 +86,21 @@ class RefundController extends Controller
                 'data' => $refund
             ]);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
     public function transfer_to_bank(Request $request)
     {
-        //return 'sdof';
 
         try {
             $response = $this->flutterwaveService->transfer_to_bank($request->all());
-            //return $response;  
 
             if ($response['status'] == 'success') {
-
                 $payment = Payment::where('id', $request->payment_id)->update(['refund' => true]);
 
 
@@ -128,7 +125,11 @@ class RefundController extends Controller
 
             ], 422);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 

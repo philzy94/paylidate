@@ -33,8 +33,6 @@ class TransactionController extends Controller
      */
     public function index()
     {
-        //Transaction::truncate()
-        //\Artisan::call('migrate');
 
 
         $transactions = Transaction::with('product', 'payment',)->orderBy('created_at', 'desc')->get();
@@ -69,7 +67,6 @@ class TransactionController extends Controller
         }
 
         $refer_user = User::where('referral_token', $request->referral_token)->first();
-        //return $request->all();
 
         if ($request->referral_token == auth('api')->user()->referral_token) {
             return response()->json([
@@ -82,7 +79,6 @@ class TransactionController extends Controller
         $referral_id = null;
         // this block of code check if there is referal banus, then it create a referal for that transaction
         if ($refer_user) {
-
             $referral = Referer::create([
                 'user_id' => $refer_user->id,
                 'amount' => 0.00,
@@ -139,7 +135,6 @@ class TransactionController extends Controller
         $transaction = Transaction::where('transaction_ref', $T_ref)->with('product', 'payment', 'secondary_user')->first();
 
         if ($transaction->transaction_reported_at && $transaction->status == 3 && Carbon::parse($transaction->transaction_reported_at)->addHours(24)->isPast()) {
-
             $transaction->update([
                 'status' => 4
             ]);
@@ -184,16 +179,12 @@ class TransactionController extends Controller
                 'data' => $transaction
             ]);
         } else {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Not Allow',
 
             ], 401);
         }
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
 
 
@@ -212,16 +203,12 @@ class TransactionController extends Controller
                 'data' => $transaction
             ]);
         } else {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Not Allow',
 
             ], 401);
         }
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
 
     // confirm transaction completion
@@ -255,16 +242,12 @@ class TransactionController extends Controller
                 'data' => $transaction
             ]);
         } else {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Not Allow',
 
             ], 401);
         }
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
 
 
@@ -278,7 +261,6 @@ class TransactionController extends Controller
 
         ]);
         $transaction = Transaction::where('id', $id)->first();
-        //return $transaction;
         if (($transaction->product->transaction_type == 'buy' && $transaction->product->user_id == auth('api')->user()->id) || ($transaction->product->transaction_type == 'sell' && $transaction->user_id == auth('api')->user()->id)) {
             $transaction->update([
                 'status' => 3,
@@ -286,13 +268,11 @@ class TransactionController extends Controller
             ]);
 
             if ($transaction) {
-
                 $user = User::where('email', $request->sellerEmail)->first();
                 Mail::to($request->sellerEmail)->send(new ReportTransaction($user->name, $transaction->transaction_reff, 'report', $request->report));
 
                 Mail::to('hello@paylidate.com')->send(new ReportTransaction('Admin', $transaction->transaction_ref, 'report', $request->report));
-                Mail::to('holyphilzy@gmail.com')->send(new ReportTransaction('Admin', $transaction->transaction_ref, 'report', $request->report));
-                Mail::to('sirlawattah@gmail.com')->send(new ReportTransaction('Lawrence', $transaction->transaction_ref, 'report', $request->report));
+                Mail::to(config('app.admin_emails'))->send(new ReportTransaction('Admin', $transaction->transaction_ref, 'report', $request->report));
             }
 
             return response()->json([
@@ -301,16 +281,12 @@ class TransactionController extends Controller
                 'data' => $transaction
             ]);
         } else {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Not Allow',
 
             ], 401);
         }
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
 
     // resolve transaction report
@@ -326,8 +302,7 @@ class TransactionController extends Controller
             Mail::to($sellerEmail)->send(new ReportTransaction($user->name, $transaction->transaction_reff, 'resolve'));
 
             Mail::to('hello@paylidate.com')->send(new ReportTransaction('Admin', $transaction->transaction_ref, 'resolve'));
-            Mail::to('holyphilzy@gmail.com')->send(new ReportTransaction('Admin', $transaction->transaction_ref, 'resolve'));
-            Mail::to('sirlawattah@gmail.com')->send(new ReportTransaction('Lawrence', $transaction->transaction_ref, 'resolve'));
+            Mail::to(config('app.admin_emails'))->send(new ReportTransaction('Admin', $transaction->transaction_ref, 'resolve'));
 
 
             return response()->json([
@@ -336,16 +311,12 @@ class TransactionController extends Controller
                 'data' => $transaction
             ]);
         } else {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Not Allow',
 
             ], 401);
         }
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
     // cancel transaction
     public function cancel($id)
@@ -369,16 +340,12 @@ class TransactionController extends Controller
                 'data' => $transaction
             ]);
         } else {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Not Allow',
 
             ], 401);
         }
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
 
 

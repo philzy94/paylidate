@@ -5,15 +5,10 @@ namespace App\Http\Controllers\ThirdPartyApi;
 use App\Withdrawal;
 use App\Services\FlutterwaveService;
 use App\Http\Controllers\Controller;
-//use Illuminate\Validation\ValidationException;
 use App\Mail\RequestWithdrawal;
 use Illuminate\Support\Facades\Mail;
-//use App\Bank;
 use App\Payment;
-//use Auth;
 use Illuminate\Http\Request;
-
-
 
 class WithdrawalController extends Controller
 {
@@ -28,7 +23,7 @@ class WithdrawalController extends Controller
     public function __construct()
     {
 
-        $this->flutterwaveService = new FlutterwaveService;
+        $this->flutterwaveService = new FlutterwaveService();
     }
 
 
@@ -44,7 +39,11 @@ class WithdrawalController extends Controller
                 'data' => $withdrawalRequests
             ]);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
@@ -85,8 +84,7 @@ class WithdrawalController extends Controller
 
             Mail::to($user->email)->send(new RequestWithdrawal($user->name, $request->transaction_id));
             Mail::to('hello@paylidate.com')->send(new RequestWithdrawal('Admin', $request->transaction_id));
-            Mail::to('holyphilzy@gmail.com')->send(new RequestWithdrawal('Admin', $request->transaction_id));
-            Mail::to('sirlawattah@gmail.com')->send(new RequestWithdrawal('Lawrence', $request->transaction_id));
+            Mail::to(config('app.admin_emails'))->send(new RequestWithdrawal('Admin', $request->transaction_id));
 
             return response()->json([
                 'status' => 'success',
@@ -94,20 +92,21 @@ class WithdrawalController extends Controller
                 'data' => $withdrawal
             ]);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
     public function transfer_to_bank(Request $request)
     {
-        //return 'sdof';
 
         try {
             $response = $this->flutterwaveService->transfer_to_bank($request->account_bank, $request->account_number, $request->amount, $request->narration, $request->currency, $request->reference, $request->debit_currency);
-            //return $response;  
 
             if ($response['status'] == 'success') {
-
                 $payment = Payment::where('id', $request->payment_id)->update(['withdrawn' => true]);
 
 
@@ -132,7 +131,11 @@ class WithdrawalController extends Controller
 
             ], 422);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 

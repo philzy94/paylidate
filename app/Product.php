@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    use HasFactory, HasSlug;
+    use HasFactory;
+    use HasSlug;
 
     protected $fillable = [
         'user_id', 'name', 'image', 'product_number', 'referral_amount', 'slug', 'price', 'quantity', 'type', 'transaction_type',
@@ -43,10 +44,6 @@ class Product extends Model
     }
 
 
-    // public function secondary_user()
-    // {
-    //     return $this->belongsTo('App\User', 'user_id');
-    // }
 
     public function transaction()
     {

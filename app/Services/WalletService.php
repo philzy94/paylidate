@@ -13,7 +13,7 @@ class WalletService
     protected $FlutterwaveService;
     public function __construct()
     {
-        $this->FlutterwaveService = new FlutterwaveService;
+        $this->FlutterwaveService = new FlutterwaveService();
     }
 
     // create a virtual account and a user wallet
@@ -22,7 +22,6 @@ class WalletService
         $tx_ref = 'PD' . '_' . $user_id . time();
         try {
             $accountResponse = $this->FlutterwaveService->createVirtualAccount($email, $name, $tx_ref, $bvn); // creating a virtual account number
-            //  return $accountResponse;
             if ($accountResponse->status !== 'success') {
                 return [
                     'status' => 'error',
@@ -31,7 +30,6 @@ class WalletService
                 ];
             }
             $accountResponse = $accountResponse->data;
-            //return $accountResponse->order_ref;
             $response = Wallet::create([
                 'user_id' => $user_id,
                 'tx_ref' => $tx_ref,
@@ -42,9 +40,10 @@ class WalletService
             ]);
             return $response;
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -70,9 +69,10 @@ class WalletService
                 'data' => $wallet
             ];
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -92,9 +92,10 @@ class WalletService
                 'data' => $wallet
             ];
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -105,25 +106,22 @@ class WalletService
     {
         try {
             if ($amount < 1) {
-
                 return [
                     'status' => 'error',
                     'message' => 'amount must be greater than 0 NGN'
                 ];
             }
             $wallet = Wallet::where('user_id', $user_id)->first();
-            
-            
-            if (!$wallet) {
 
+
+            if (!$wallet) {
                 return [
                     'status' => 'error',
                     'message' => "You don't have a wallet"
                 ];
             }
-            
-            if ($wallet->balance - $amount < 0) {
 
+            if ($wallet->balance - $amount < 0) {
                 return [
                     'status' => 'error',
                     'message' => 'insufficient fund'
@@ -139,9 +137,10 @@ class WalletService
                 'data' => $wallet
             ];
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -179,9 +178,10 @@ class WalletService
 
             return $wallet;
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -216,9 +216,10 @@ class WalletService
 
             return $wallet;
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -228,7 +229,6 @@ class WalletService
     {
         try {
             if ($amount < 1) {
-
                 return [
                     'status' => 'error',
                     'message' => 'amount must be greater than 0'
@@ -243,9 +243,10 @@ class WalletService
 
             return $wallet;
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -269,9 +270,10 @@ class WalletService
 
             return $wallet;
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }
@@ -280,7 +282,6 @@ class WalletService
     public function walletHistory($user_id, $type, $amount, $narration, $wallet_id, $balance_before, $balance_after)
     {
         try {
-
             $response = WalletHistory::create([
                 'user_id' => $user_id,
                 'wallet_id' => $wallet_id,
@@ -295,9 +296,10 @@ class WalletService
                 'data' => $response
             ];
         } catch (\Exception $e) {
+            report($e);
             return [
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ];
         }
     }

@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notification;
 class PasswordResetRequest extends Notification
 {
     use Queueable;
+
     protected $token;
     /**
      * Create a new notification instance.
@@ -40,13 +41,12 @@ class PasswordResetRequest extends Notification
      */
     public function toMail($notifiable)
     {
-        $url = ( config('app.domain') . 'reset-password/'.$this->token);
-        return (new MailMessage)
+        $url = ( config('app.domain') . 'reset-password/' . $this->token);
+        return (new MailMessage())
             ->subject('Password reset')
             ->line('You are receiving this email because we received a password reset request for your account.')
             ->action('Reset Password', ($url))
             ->line('If you did not request a password reset, no further action is required.');
-           
     }
 
     /**

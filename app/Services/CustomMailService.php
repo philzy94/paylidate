@@ -7,8 +7,7 @@ use Illuminate\Support\Facades\Mail;
 
 class CustomMailService
 {
-
-public function sendMail($to, $data)
+    public function sendMail($to, $data)
     {
         try {
             Mail::to($to)->send(new WalletCreated($data));
@@ -18,11 +17,11 @@ public function sendMail($to, $data)
                 'message' => 'mail sent successfully'
             ];
         } catch (\Exception $e) {
+            report($e);
             return [
-                'status' => 'error',
-                'message' => $e
+            'status' => 'error',
+            'message' => 'An error occured. Please try again'
             ];
         }
     }
-
 }

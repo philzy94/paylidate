@@ -23,16 +23,16 @@ class UserAccountController extends Controller
      */
     public function index()
     {
-        $virtual_account = new UserAccount;
+        $virtual_account = new UserAccount();
         $account = $virtual_account->where('user_id', Auth::user()->id)->first();
 
         $output = null;
         if ($account && $account->ref) {
-           $virtual_account->getVirtualAccount($account->ref);
+            $virtual_account->getVirtualAccount($account->ref);
 
             if ($virtual_account['status'] == 'success') {
                     $output = $virtual_account['data'];
-                }
+            }
         }
 
         return response()->json([

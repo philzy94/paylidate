@@ -9,7 +9,8 @@ use Illuminate\Queue\SerializesModels;
 
 class SellerFulfilmentMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public $user;
     public $data;

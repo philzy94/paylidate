@@ -28,7 +28,7 @@ class PaymentController extends Controller
     public function __construct()
     {
 
-        $this->flutterwaveService = new FlutterwaveService;
+        $this->flutterwaveService = new FlutterwaveService();
     }
     /**
      * Get all payments.
@@ -70,47 +70,20 @@ class PaymentController extends Controller
      *
      * @return [string] message
      */
-    // public function store(Request $request)
-    // {
 
-    //     $payment = Payment::create([
-    //         'user_id' => auth('api')->user()->id,
-    //         'payment_ref' => $request->flw_T_ref,
-    //         'payment_id' => $request->flw_T_id,
-    //         'transaction_id' => $request->transaction_id,
     //         //'transaction_ref' => $request->tx_ref,
     //         // 'status' => $request->status,
-    //         'description' => $request->description,
-    //    ]);
-
-
-    //    $response = $this->flutterwaveService->verify_payment( $request->flw_T_id);
 
 
 
-    //    if ($response['data']['status'] === "successful"
+
+
     //     && $response['data']['amount'] === $payment->transaction->amount
     //     && $response['data']['currency'] === $payment->currency) {
 
-    //         $verified_payment = Payment::where('id', $payment->id)->update([
-    //             'verified' => true //payment verified
-    //         ]);
 
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'success',
-    //             'data' => $verified_payment
-    //         ]);
-    //     } 
 
-    //     else {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Payment not verified',            
-    //         ]);
-    //     }
 
-    // }
 
 
 
@@ -133,7 +106,6 @@ class PaymentController extends Controller
     {
 
         try {
-
             $old_payment = Payment::where('payment_id', $request->payment_id)->first();
 
             if ($old_payment && $old_payment->verified == true) {
@@ -156,7 +128,6 @@ class PaymentController extends Controller
                 'payment_id' => $request->payment_id,
                 'transaction_id' => $request->transaction_id,
                 'verified' => true,
-                // 'status' => $request->status,
                 'description' => $request->description,
             ]);
 
@@ -186,7 +157,7 @@ class PaymentController extends Controller
                 'data' => $payment
             ]);
         } catch (Exception $e) {
-            //return $e;
+            report($e);
             return response()->json([
                 'status' => 'error',
                 'message' => 'An error occured while trying to verify your payment. Please contact paylidate.com ',
@@ -293,9 +264,6 @@ class PaymentController extends Controller
 
 
         try {
-
-            //return 'helllooo';
-
             $response = $this->flutterwaveService->payviacard($data);
 
 
@@ -318,7 +286,6 @@ class PaymentController extends Controller
 
 
             if ($response["status"] == "success" && $response["data"]["suggested_auth"] == "PIN") {
-                // $new_data = [...$data];
                 $data["suggested_auth"] = "PIN";
                 $response = $this->flutterwaveService->payviacard($data);
 
@@ -330,7 +297,6 @@ class PaymentController extends Controller
             }
 
             if ($response["status"] == "success" && $response["data"]["suggested_auth"] == "NOAUTH_INTERNATIONAL") {
-
                 throw ValidationException::withMessages([
                     'error' => ['This card can not be charge']
                 ]);
@@ -355,7 +321,11 @@ class PaymentController extends Controller
                 return $response;
             }
         } catch (Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
 
             return response()->json([
                 'status' => 'error',

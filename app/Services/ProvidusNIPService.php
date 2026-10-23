@@ -19,10 +19,6 @@ class ProvidusNIPService
 
     public function __construct()
     {
-        // $this->baseURLBank = env('BANK_URL');
-        // $this->baseURL = env('FLUTTERWAVE_URL');
-        // $this->username = env('FLUTTERWAVE_USERNAME');
-        // $this->password = env('FLUTTERWAVE_PASSWORD');
     }
 
     // create new virtual account
@@ -48,9 +44,10 @@ class ProvidusNIPService
             curl_close($curl);
             return $response;
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ]);
         }
     }
@@ -81,9 +78,10 @@ class ProvidusNIPService
             curl_close($curl);
             return $response;
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ]);
         }
     }
@@ -110,11 +108,11 @@ class ProvidusNIPService
 
             curl_close($curl);
             return $response;
-            // return $response;
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ]);
         }
     }
@@ -138,8 +136,6 @@ class ProvidusNIPService
     // Accept – application/json Content-Type – application/json
     // 4.1.3 JSON Request and Response
     // Request Parameter (json string)
-    // { "bvn":"22222222222", "userName":"test", "password":"test"
-    // }
     public function getBVNDetails($bvn)
     {
         try {
@@ -162,9 +158,10 @@ class ProvidusNIPService
             curl_close($curl);
             return $response;
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e
+                'message' => 'An error occured. Please try again'
             ]);
         }
     }
@@ -176,8 +173,6 @@ class ProvidusNIPService
     // Accept – application/json Content-Type – application/json
     // 4.2.3 JSON Request and Response
     // Request Parameter (json string)
-    // { "accountNumber":"1018996198", "beneficiaryBank":"110000", "userName":"test", "password":"test"
-    // }
     public function getNIPAccount($data)
     {
         $response = Http::withHeaders([
@@ -199,13 +194,11 @@ class ProvidusNIPService
     // Accept – application/json Content-Type – application/json
     // 4.3.3 JSON Request and Response
     // Request Parameter (json string)
-    // {
     // "beneficiaryAccountName":"UGBO, CHARLES UMORE", "transactionAmount": "2000.45",
     // "currencyCode":"NGN",
     // "narration":"Testing",
     // "sourceAccountName":"Nnamdi Adebayo Hamzat" , "beneficiaryAccountNumber":"1700313889", "beneficiaryBank":"000013", "transactionReference":"20191119143501", "userName":"test",
     // "password":"test"
-    // }
     public function NIPFundTransfer($data)
     {
         $response = Http::withHeaders([
@@ -237,9 +230,7 @@ class ProvidusNIPService
     // Content-Type – application/json
     // 4.4.3 JSON Request and Response
     // Request Parameter (json string)
-    // { "transactionReference":"1234567gkgk", "userName":"test",
     // "password":"test"
-    // }
     public function getNIPTransactionStatus($data)
     {
         $response = Http::withHeaders([
@@ -286,10 +277,8 @@ class ProvidusNIPService
     // 4.7.3 JSON Request and Response
 
     // Request Parameter (json string)
-    // {
     // "transactionReference":" 2345677777", "userName":"test",
     // "password":"test"
-    // }
 
     public function GetProvidusTransactionStatus($data)
     {
@@ -310,10 +299,8 @@ class ProvidusNIPService
     // Accept – application/json Content-Type – application/json
     // 4.8.3 JSON Request and Response
     // Request Parameter (json string)
-    // {
     // "accountNumber":" 1700263070" “userName” : ”test”
     // “password” : ”test”
-    // }
 
     public function GetProvidusAccount($data)
     {

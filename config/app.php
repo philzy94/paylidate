@@ -36,4 +36,7 @@ return [
 
     'domain' => env('DOMAIN'),
 
+    // Comma separated list of staff addresses notified about withdrawals and reports.
+    'admin_emails' => array_filter(explode(',', env('ADMIN_EMAILS', ''))),
+
 ];

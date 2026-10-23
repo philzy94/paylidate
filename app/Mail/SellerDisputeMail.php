@@ -9,7 +9,8 @@ use Illuminate\Queue\SerializesModels;
 
 class SellerDisputeMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public $subject;
     public $user;
@@ -38,7 +39,6 @@ class SellerDisputeMail extends Mailable
     {
 
         return $this->from('hello@paylidate.com', 'Paylidate')
-        ->subject('Dispute ('.$this->subject .')' )->view('mails.seller_dispute');
-        
+        ->subject('Dispute (' . $this->subject . ')')->view('mails.seller_dispute');
     }
 }

@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Withdrawal extends Model
 {
-
     protected $fillable = [
         'user_id','payment_id','transaction_id','bank_id','narration',
         'debit_currency','f_withdrawal_id', 'status'
@@ -21,12 +20,12 @@ class Withdrawal extends Model
     {
         return $this->belongsTo('App\User');
     }
-    
+
     public function transaction()
     {
         return $this->belongsTo('App\Transaction');
     }
-    
+
     public function payment()
     {
         return $this->belongsTo('App\Payment');

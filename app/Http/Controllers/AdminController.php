@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
 use App\Transaction;
 use App\Dispute;
 use App\User;
@@ -22,17 +21,14 @@ class AdminController extends Controller
 
     public function users()
     {
-        
+
         $users = User::with('Prouduct')->orderBy('name', 'ASC')->get();
-        //$users = User::where('id', '!=', auth('api')->user()->id)->orderBy('name', 'ASC')->get();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'success',
             'data' => $users
         ]);
-
-        
     }
 
 
@@ -47,7 +43,7 @@ class AdminController extends Controller
         ]);
     }
 
-    
+
 
     public function numbers_of()
     {
@@ -67,7 +63,7 @@ class AdminController extends Controller
 
             $dispute->receiver_name = $receiver->name;
         }
-        
+
 
         return response()->json([
             'status' => 'success',
@@ -113,40 +109,38 @@ class AdminController extends Controller
         ]);
     }
 
-  
+
     // Dispute section
 
     public function getTransactionDisputes($transaction_id)
-    {        
+    {
 
         $dispute = Dispute::where('transaction_id', $transaction_id)->with('user', 'transaction')
         ->orderBy('dispute_solved')
         ->get();
 
 
-        if(!$dispute){
+        if (!$dispute) {
             return response()->json([
                 'status' => 'Not found',
                 'message' => 'Not found',
-                
+
             ], 404);
         }
         $transaction = Transaction::where('id', $transaction_id)->with('product')->first();
-        
-        if(auth('api')->user()->is_admin == true)        
-        {
+
+        if (auth('api')->user()->is_admin == true) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $dispute
             ]);
-
         }
 
         return response()->json([
             'status' => 'Not allow',
             'message' => 'Unauthorize',
-            
+
         ], 401);
     }
 
@@ -155,14 +149,14 @@ class AdminController extends Controller
         $request->validate([
             'id' => 'required',
             'transaction_id' => 'required',
-            
+
         ]);
 
-        if(auth('api')->user()->is_admin == true)  {
+        if (auth('api')->user()->is_admin == true) {
             return response()->json([
                 'status' => 'Not allow',
                 'message' => 'Unauthorize',
-                
+
             ], 401);
         }
 
@@ -174,16 +168,13 @@ class AdminController extends Controller
         $dispute_presence = Dispute::where([['transaction_id', '=', $request->transaction_id], ['dispute_solved', '=', false]])->first();
 
 
-        if($dispute_presence){
-
+        if ($dispute_presence) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $dispute
             ]);
-        }
-        else{
-            
+        } else {
             Transaction::where('id', $request->transaction_id)->update([
                 'dispute' => false
             ]);
@@ -194,8 +185,5 @@ class AdminController extends Controller
                 'data' => $dispute
             ]);
         }
-        
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
     }
 }

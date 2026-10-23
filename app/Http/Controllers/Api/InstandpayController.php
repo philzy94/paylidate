@@ -13,18 +13,16 @@ use App\Services\ProvidusNIPService;
 use Illuminate\Support\Facades\DB;
 use Twilio\Rest\Client;
 
-
 class InstandpayController extends Controller
 {
-
     protected $flutterwaveService;
     protected $providusNIPService;
 
     public function __construct()
     {
 
-        $this->flutterwaveService = new FlutterwaveService;
-        $this->providusNIPService = new ProvidusNIPService;
+        $this->flutterwaveService = new FlutterwaveService();
+        $this->providusNIPService = new ProvidusNIPService();
     }
     /**
      * Display a listing of the resource.
@@ -33,12 +31,6 @@ class InstandpayController extends Controller
      */
     public function index()
     {
-        //return 'ffvfg';
-        // $name = 'philemon';
-        // $response = $this->providusNIPService->createVirtualAccount($name);
-        // $result = (json_decode($response));
-        // dd($result->account_name);
-        //return  $response;
     }
     public function receive()
     {
@@ -122,8 +114,6 @@ class InstandpayController extends Controller
             'payment_ref' => 'required|string',
 
         ]);
-        //$str = substr($request->receiver_number, 1);
-        //return $str;
         $receiver = User::where('phone', $request->receiver_number)->first();
         if (!$receiver) {
             return response()->json([
@@ -158,7 +148,6 @@ class InstandpayController extends Controller
             $input['receiver_name']   = $receiver->name;
             $input['receiver_id']   = $receiver->id;
 
-            //return $transfer;
 
             $body = 'Paylidate payment of NGN' . $input['amount'] . ' from ' . $input['sender_name'] . '. Visit https://paylidate.com/recieve-instant-funds/' . $input['link_token'] . ' to withdraw. Your withdrawal pin is ' . $input['withdrawal_pin'] . '. Tracking id ' . $input['tracking_id'];
 
@@ -169,22 +158,10 @@ class InstandpayController extends Controller
             $client = new Client($account_sid, $auth_token);
 
             $frmNum = '+234' . substr($request->receiver_number, 1);
-            // $message = $client->messages->create($frmNum, ['from' => $twilio_number, 'body' => $body]);
             $client->messages->create($frmNum, ['from' => $twilio_number, 'body' => $body]);
 
 
-            // Http::withHeaders([
-            //     'Accept' => 'application/json',
-            // ])->post(
-            //     'https://www.bulksmsnigeria.com/api/v2/sms/create',
-            //     [   
-            //             'api_token'=> '7XyAWuScqHNoALX5xvDKPl9YUlEKsR5tT2pTjKIf9SDnrqXUgdi1nYLBwgIG',
-            //             'to'=> $input['receiver_number'],
-            //             'from'=> 'Paylidate',
-            //             'body'=> $body,                    
 
-            //     ]
-            // );
             $transfer = Instandpay::create($input);
 
 
@@ -194,7 +171,11 @@ class InstandpayController extends Controller
                 'data' => $transfer
             ], 200);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
@@ -209,7 +190,6 @@ class InstandpayController extends Controller
             'account_number' => 'required|numeric',
 
         ]);
-        //return $request->all();
         $user = auth('api')->user();
         try {
             $instandpay = Instandpay::where('link_token', $request->link_token)->first();
@@ -222,16 +202,8 @@ class InstandpayController extends Controller
             if ($instandpay && $instandpay->withdrawal_pin == $request->withdrawal_pin) {
                 $response = $this->flutterwaveService->verifyBankAccountNumber($request->account_number, $request->bank_code);
 
-                //'data' => $response['status']
-                //  if($response['status'] != 'success'){
-                //      return response()->json([
-                //          'status' => 'error',
-                //          'message' => 'Sorry, that account number is invalid, please check and try again',
 
-                //      ], 400);
-                //  }
                 if ($instandpay->status != true) {
-
                     $instandpay->update([
                         'bank_code' => $request->bank_code,
                         'account_name' =>  $request->account_name,
@@ -253,7 +225,11 @@ class InstandpayController extends Controller
 
             ], 400);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
@@ -262,7 +238,6 @@ class InstandpayController extends Controller
         $request->validate([
             'id' => 'required',
         ]);
-        //return "efdwfd";
         try {
             $instandpay = Instandpay::where('id', $request->id)->first();
             if (!$instandpay) {
@@ -287,7 +262,6 @@ class InstandpayController extends Controller
             $input['narration']   = $instandpay['description'];
 
             $response = $this->flutterwaveService->transfer_to_bank($input);
-            // return $response;  
 
             if ($response['status'] == 'success') {
                 $instandpay->update([
@@ -308,7 +282,11 @@ class InstandpayController extends Controller
 
             ], 400);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 

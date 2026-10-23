@@ -13,10 +13,6 @@ use App\UserAccount;
 use Auth;
 use Carbon\Carbon;
 
-
-
-
-
 /**
  * @group  Authentication management
  *
@@ -24,8 +20,6 @@ use Carbon\Carbon;
  */
 class AuthController extends Controller
 {
-
-
     public function __construct()
     {
     }
@@ -76,10 +70,9 @@ class AuthController extends Controller
                     'message' => 'User already exist. please login',
                 ], 409);
             } else {
-
                 $emailToken = Str::random(8) . date('dmyHis');
                 $verifyEmailLink = "https://paylidate.com/verify/" . $emailToken;
-                $user_name = 'user_' . rand(1,400) . date('dmyHis');
+                $user_name = 'user_' . rand(1, 400) . date('dmyHis');
 
 
                 $input = $request->all();
@@ -102,9 +95,10 @@ class AuthController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'Error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
 
 
             ]);
@@ -156,10 +150,9 @@ class AuthController extends Controller
                     'message' => 'User already exist. please login',
                 ], 409);
             } else {
-
                 $emailToken = Str::random(8) . date('dmyHis');
                 $verifyEmailLink = "https://paylidate.com/verify/" . $emailToken;
-                $user_name = 'user_' . rand(1,400) . date('dmyHis');
+                $user_name = 'user_' . rand(1, 400) . date('dmyHis');
                 $reffer = User::where('referral_token', $ref)->get();
 
 
@@ -184,9 +177,10 @@ class AuthController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'Error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
 
 
             ]);
@@ -217,18 +211,20 @@ class AuthController extends Controller
         $credentials['deleted_at'] = null;
 
 
-        if (!Auth::attempt($credentials))
+        if (!Auth::attempt($credentials)) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Wrong email and password'
             ], 401);
+        }
 
 
-        if (!Auth::user()->active)
+        if (!Auth::user()->active) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Your account is not activated'
             ], 401);
+        }
 
         $user = User::where('id', Auth::user()->id)->first();
 
@@ -239,8 +235,9 @@ class AuthController extends Controller
         $tokenResult = $user->createToken('Personal Access Token');
         $token = $tokenResult->token;
 
-        if ($request->remember_me)
+        if ($request->remember_me) {
             $token->expires_at = Carbon::now()->addWeeks(4);
+        }
         $token->save();
 
 
@@ -283,7 +280,7 @@ class AuthController extends Controller
         $account = UserAccount::where('user_id', Auth::user()->id)->first();
 
         if ($account && $account->ref) {
-            $user_object = new User;
+            $user_object = new User();
             $virtual_account = $user_object->getVirtualAccount($account->ref);
 
             if ($virtual_account['status'] == 'success') {
@@ -354,6 +351,7 @@ class AuthController extends Controller
 
             ]);
         } catch (\Exception $e) {
+            report($e);
 
             return response()->json([
                 'status' => 'error',
@@ -437,15 +435,14 @@ class AuthController extends Controller
     public function rate_user(Request $request, $id)
     {
         try {
-            
-            if($id == auth()->user()->id){
+            if ($id == auth()->user()->id) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Error user can rate self.'
                 ]);
             }
 
-            $rating = new Rating;
+            $rating = new Rating();
             $rating->rated_user_id = $id;
             $rating->user_id = auth()->user()->id;
             $rating->rating = $request->rating;
@@ -454,9 +451,8 @@ class AuthController extends Controller
                 'status' => 'Success',
                 'message' => 'User rated sousecfully'
             ], 200);
-
         } catch (\Throwable $th) {
-            // throw $th;
+            report($th);
             return response()->json([
                 'status' => 'Error',
                 'message' => 'An Error Occured',
@@ -470,7 +466,7 @@ class AuthController extends Controller
         try {
             $ratings = Rating::where('rated_user_id', $id)->get();
             $totalScore = 0;
-            if(!$ratings){
+            if (!$ratings) {
                 return response()->json([
                     'message' => 'no ratings found for user',
                     'data' => 0
@@ -480,14 +476,14 @@ class AuthController extends Controller
                 $totalScore += $rating->rating;
             }
             $averageScore = $totalScore / count($ratings);
-            
+
             return response()->json([
                 'status' => 'Success',
                 'message' => 'ratings found',
                 'data' => $averageScore
             ]);
-
-        } catch(\Throwable $th) {
+        } catch (\Throwable $th) {
+            report($th);
             return response()->json([
                 'status' => 'Error',
                 'message' => 'An Error Occured',

@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Http;
 
 class FlutterwaveService
 {
-
     public function __construct()
     {
     }
@@ -80,7 +79,7 @@ class FlutterwaveService
         return $response;
     }
 
- 
+
     public function getRate($amount, $destination_currency, $source_currency)
     {
         $response = Http::withHeaders([
@@ -142,6 +141,7 @@ class FlutterwaveService
             curl_close($curl);
             return json_decode($response);
         } catch (\Exception $e) {
+            report($e);
             return json_decode($e);
         }
     }
@@ -250,10 +250,8 @@ class FlutterwaveService
         return $response;
     }
 
-    //$request->account_bank, $request->account_number, $request->amount, $request->narration, $request->currency, $request->reference, $request->debit_currency
     public function transfer_to_bank($param)
     {
-        //return env('APP_NAME');
         try {
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key')
@@ -270,7 +268,11 @@ class FlutterwaveService
 
             return $response;
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return [
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ];
         }
     }
 }

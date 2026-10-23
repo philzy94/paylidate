@@ -17,7 +17,7 @@ class Fulfillment extends Model
     {
         return $this->belongsTo('App\User');
     }
-    
+
     public function payment()
     {
         return $this->hasOne('App\Payment');

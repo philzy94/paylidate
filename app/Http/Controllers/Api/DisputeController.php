@@ -21,7 +21,7 @@ class DisputeController extends Controller
     public function __construct()
     {
 
-        $this->disputeCountdownService = new DisputeCountdownService;
+        $this->disputeCountdownService = new DisputeCountdownService();
     }
 
     /**
@@ -30,45 +30,41 @@ class DisputeController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function getTransactionDisputes($transaction_id)
-    {        
+    {
 
         $dispute = Dispute::where('transaction_id', $transaction_id)->with('user', 'transaction', 'dispute_chat')
         ->orderBy('dispute_solved')
         ->get();
 
 
-        if(!$dispute){
+        if (!$dispute) {
             return response()->json([
                 'status' => 'Not found',
                 'message' => 'Not found',
-                
+
             ], 404);
         }
         $transaction = Transaction::where('id', $transaction_id)->with('product')->first();
-        
-        if($transaction->user_id == auth('api')->user()->id || $transaction->product->user_id == auth('api')->user()->id  )        
-        {
+
+        if ($transaction->user_id == auth('api')->user()->id || $transaction->product->user_id == auth('api')->user()->id) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $dispute
             ]);
-
         }
 
         return response()->json([
             'status' => 'Not allow',
             'message' => 'Unauthorize',
-            
+
         ], 401);
     }
     public function index($transaction_id)
     {
-      
-
     }
 
-    
+
 
     /**
      * Show the form for creating a new resource.
@@ -81,13 +77,13 @@ class DisputeController extends Controller
             'user_id' => 'required',
             'id' => 'required',
             'transaction_id' => 'required',
-            
+
         ]);
 
-        if(auth('api')->user()->id != $request->user_id)  {
+        if (auth('api')->user()->id != $request->user_id) {
             return response()->json([
                 'status' => 'Not allow',
-                'message' => 'Unauthorize',                
+                'message' => 'Unauthorize',
                 'data' => ''
             ], 401);
         }
@@ -99,16 +95,13 @@ class DisputeController extends Controller
         $dispute_presence = Dispute::where([['transaction_id', '=', $request->transaction_id], ['dispute_solved', '=', false]])->first();
 
 
-        if($dispute_presence){
-            
+        if ($dispute_presence) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $dispute
             ]);
-        }
-        else{
-            
+        } else {
             Transaction::where('id', $request->transaction_id)->update([
                 'dispute' => false,
                 'status' => 0,
@@ -120,9 +113,6 @@ class DisputeController extends Controller
                 'data' => $dispute
             ]);
         }
-        
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
     }
 
     /**
@@ -136,49 +126,41 @@ class DisputeController extends Controller
         $request->validate([
             'subject' => 'required|string',
             'description' => 'required|string',
-            //'transaction' => 'required',
-            
+
         ]);
 
-        //return $request->transaction['user_id'];
 
         try {
             $user = auth('api')->user();
             $user_id = $user->id;
 
-            if($user_id == $request->transaction['user_id'] || $user_id == $request->transaction['product']['user_id'])  {
-                
-            }
-            else{
+            if ($user_id == $request->transaction['user_id'] || $user_id == $request->transaction['product']['user_id']) {
+            } else {
                 return response()->json([
                     'status' => 'Not allow',
                     'message' => 'Unauthorize',
-                    
+
                 ], 401);
             }
-            
+
             $input['subject']   = $request->subject;
             $input['user_id']   = $user_id;
             $input['transaction_id']   = $request->transaction['id'];
-            $input['dispute']   = $request->description;           
-                      
+            $input['dispute']   = $request->description;
+
             $dispute = Dispute::create($input);
-            if($dispute){
+            if ($dispute) {
                 $transaction = Transaction::where('id', $request->transaction['id'])->first();
                 $transaction->update([
                     'dispute' => true
                 ]);
-
             }
 
             $total_price = null;
-            if(empty($request->transaction['payment']))
-            {
+            if (empty($request->transaction['payment'])) {
                 $total_price = $request->transaction['product']['price'] * $request->transaction['quantity'];
-            }
-            else{
+            } else {
                 $total_price = $request->transaction['amount'];
-                
             }
 
             $newTransaction['id'] = $request->transaction['id'];
@@ -193,31 +175,27 @@ class DisputeController extends Controller
 
             $user1 = User::where('id', $request->transaction['user_id'])->first();
             $user2 = User::where('id', $request->transaction['product']['user_id'])->first();
-            
-            
+
+
             $admin_email = 'hello@paylidate.com';
 
             Mail::to($user1->email)->send(new DisputeMail($request->subject, $request->description, $newTransaction, $user1->name));
-            Mail::to($user2->email)->send(new DisputeMail($request->subject, $request->description, $newTransaction,  $user2->name));
+            Mail::to($user2->email)->send(new DisputeMail($request->subject, $request->description, $newTransaction, $user2->name));
             Mail::to($admin_email)->send(new DisputeMail($request->subject, $request->description, $newTransaction, 'ADMIN'));
 
-            // if($request->transaction['status'] == 0){
-            //     $this->disputeCountdownService->countdown($request->transaction['dispute']);
-            // }
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $dispute
             ]);
-
-        } 
-
-        catch (\Exception $e) {
-            return $e;
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
-
-
     }
 
     /**
@@ -229,7 +207,6 @@ class DisputeController extends Controller
     public function show($id)
     {
         return 'dfdwofod';
-        
     }
 
     /**

@@ -52,8 +52,8 @@ class FulfilmentController extends Controller
 
         $fulfilment = Fulfillment::where('transaction_id', $urlHash[1])->first();
 
-        if($validated['code'] == $fulfilment->code){
-            if($fulfilment->status == 1){
+        if ($validated['code'] == $fulfilment->code) {
+            if ($fulfilment->status == 1) {
                 return response()->json([
                     'status' => 'Used',
                     'message' => 'This Order Has Already Been FulfFilled'
@@ -71,14 +71,12 @@ class FulfilmentController extends Controller
                     'message' => 'Succes Order Fulfilled'
                 ], 200);
             }
-
-        }else {
+        } else {
             return response()->json([
                 'status' => 'Error',
                 'message' => 'Invalid Code'
             ], 400);
         }
-
     }
 
     public function static()
@@ -106,13 +104,12 @@ class FulfilmentController extends Controller
 
         $valid = 1234;
 
-        if($validated['code'] == $valid){
+        if ($validated['code'] == $valid) {
             return response()->json([
                 'status' => 'Success',
                 'message' => 'Success Order Fulfiled',
             ]);
         } else {
-
             return response()->json([
                 'status' => 'Error',
                 'message' => 'Invalid Code',

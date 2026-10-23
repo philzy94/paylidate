@@ -8,7 +8,6 @@ use App\Referer;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
-
 class ReferralWidrawalController extends Controller
 {
     protected $flutterwaveService;
@@ -16,7 +15,7 @@ class ReferralWidrawalController extends Controller
     public function __construct()
     {
 
-        $this->flutterwaveService = new FlutterwaveService;
+        $this->flutterwaveService = new FlutterwaveService();
     }
 
 
@@ -33,7 +32,11 @@ class ReferralWidrawalController extends Controller
                 'data' => $withdrawalRequests
             ]);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
@@ -74,10 +77,11 @@ class ReferralWidrawalController extends Controller
 
         $referral_widrawal = ReferralWidrawal::create($ref_withdrawal);
 
-        if ($referral_widrawal)
+        if ($referral_widrawal) {
             $referal_bonus = Referer::where([['user_id', '=', $user->id], ['withdrawal_status', '=', false], ['amount', '>', 0]])->update([
                 'withdrawal_status' => true
             ]);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -90,16 +94,11 @@ class ReferralWidrawalController extends Controller
 
     public function transfer_to_bank(Request $request)
     {
-        //return 'sdof';
 
         try {
             $response = $this->flutterwaveService->transfer_to_bank($request->account_bank, $request->account_number, $request->amount, $request->narration, $request->currency, $request->reference, $request->debit_currency);
-            //return $response;  
 
             if ($response['status'] == 'success') {
-
-
-
                 $withdrawal = ReferralWidrawal::find($request->id);
                 $withdrawal->update([
                     'status' => true,
@@ -124,7 +123,11 @@ class ReferralWidrawalController extends Controller
 
             ], 422);
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 

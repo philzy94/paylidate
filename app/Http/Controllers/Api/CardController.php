@@ -23,24 +23,22 @@ class CardController extends Controller
 
     protected $flutterwaveService;
 
-    public function __construct(){
+    public function __construct()
+    {
 
-        $this->flutterwaveService = new FlutterwaveService;
+        $this->flutterwaveService = new FlutterwaveService();
     }
 
     public function index()
     {
-        $virtual_card = new VirtualCard;
+        $virtual_card = new VirtualCard();
         $cards = $virtual_card->where('user_id', auth('api')->user()->id)->get();
         $new_cards = $cards;
 
-        //return $cards;
         if ($cards) {
             foreach ($cards as $key => $card) {
                 $response = $this->flutterwaveService->getvirtualCard($card->card_id);
                 $new_cards[$key]->data = $response['data'];
-                
-
             }
         }
 
@@ -59,7 +57,6 @@ class CardController extends Controller
      */
     public function create()
     {
-
     }
 
     /**
@@ -89,28 +86,25 @@ class CardController extends Controller
                     'account_id' => $response['data']['account_id'],
                     'currency' => $response['data']['currency'],
                     'label' => $request->label,
-                    // 'default' => $request->default,
                 ]);
                 return response()->json([
                     'status' => 'success',
                     'message' => 'success',
                     'data' => $response['data']
                 ]);
-            }else {
+            } else {
                 return response()->json([
                     'status' => 'error',
                     'message' => $response
                 ], 406);
             }
-        }         
-        catch (\Throwable $th) {
-            Mail::raw($th->getMessage(), function ($message) {
-                $message->from('hello@paylidate.com', 'Paylidate');
-                $message->to('syflex360@gmail.com');
-                $message->subject('Unable to save created card');
-            });
-        } 
-
+        } catch (\Throwable $th) {
+            report($th);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unable to save created card',
+            ], 500);
+        }
     }
 
 
@@ -124,19 +118,18 @@ class CardController extends Controller
     {
         $response = $this->flutterwaveService->fundVirtualCard($request->virtual_card_id, $request->amount);
 
-            if ($response['status'] == 'success') {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'success',
-                    'data' => $response['data']
-                ]);
-            }else {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $response
-                ], 406);
-            }
-
+        if ($response['status'] == 'success') {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'success',
+                'data' => $response['data']
+            ]);
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => $response
+            ], 406);
+        }
     }
 
     /**

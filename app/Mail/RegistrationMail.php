@@ -9,8 +9,9 @@ use Illuminate\Queue\SerializesModels;
 
 class RegistrationMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
-    //public $afterCommit = true;
+    use Queueable;
+    use SerializesModels;
+
     public $user;
     public $verifyEmailLink;
     /**
@@ -33,7 +34,5 @@ class RegistrationMail extends Mailable implements ShouldQueue
     {
         return $this->from('paylidatesupport@lotusfort.com', 'Paylidate')
         ->subject('Verify Email')->view('mails.registration');
-        
-        //$this->view('mails.registration');
     }
 }

@@ -16,7 +16,6 @@ use App\VirtualCard;
 use Carbon\Carbon;
 use App\Transaction;
 
-
 /**
  * @group  Authentication management
  *
@@ -40,29 +39,28 @@ class AuthController extends Controller
      */
     public function signup(Request $request)
     {
-        //return user::all();
         $request->validate([
             'name' => 'required|string|min:3',
             'email' => 'required|string|email|max:255',
             'password' => 'required',
             'password_confirmation' => 'required|same:password',
-    
-            
+
+
         ]);
 
-        if(isset($request->phone)){
+        if (isset($request->phone)) {
             $request->validate([
-                'phone' => 'unique:users',        
-                
+                'phone' => 'unique:users',
+
             ]);
         }
 
-       
+
 
 
         $user = User::where('email', $request->get('email'))->first();
 
-        
+
         if ($user && ($user->active == false || strlen($user->password) < 8)) {
             $user->update([
                 'name' => $request->name,
@@ -85,7 +83,6 @@ class AuthController extends Controller
                 'message' => 'User created',
                 'access_token' => $tokenResult->accessToken,
                 'data' => $user->load('wallet'),
-                // 'account' => $virtual_account['data']
             ]);
         } elseif ($user) {
             return response()->json([
@@ -93,10 +90,8 @@ class AuthController extends Controller
                 'message' => 'User already exist. please login',
             ], 409);
         } else {
-
             $emailToken = Str::random(8) . date('dmyHis');
             $verifyEmailLink = "https://paylidate.com/verify/" . $emailToken;
-            //return $verifyEmailLink;
 
 
             $input = $request->all();
@@ -118,7 +113,6 @@ class AuthController extends Controller
                 'message' => 'User created',
                 'access_token' => $tokenResult->accessToken,
                 'data' => $user->load('wallet'),
-                // 'account' => $virtual_account['data']
             ]);
         }
     }
@@ -141,61 +135,39 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        // \Artisan::call('migrate');
-        // $userss = User::all();
-        // foreach ($userss as $user) {
-        //     $user->update(
-        //         [
-        //             'referral_token' => Str::random(10) . date('dmyHis'),
-        //         ]
-        //     );
-        // }
 
-        //$credentials['active'] = 1;
         $credentials['email']   = strtolower($request->email);
         $credentials['password']   = $request->password;
         $credentials['deleted_at'] = null;
 
 
-        if (!Auth::attempt($credentials))
+        if (!Auth::attempt($credentials)) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Wrong email and password'
             ], 401);
+        }
 
-        // if (isset(Auth::user()->email_token) || !Auth::user()->email_verified_at)
-        //     {
-        //         return response()->json([
-        //         'status' => 'failed',
-        //         'message' => 'Please verify your email address'
-        //     ], 401);
-        //         }
 
-        if (!Auth::user()->active)
+        if (!Auth::user()->active) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Your account is not activated'
             ], 401);
+        }
 
         $user = User::where('id', Auth::user()->id)->with('wallet')->first();
 
-        // $user_account = new UserAccount;
-        // $account = $user_account->where('user_id', Auth::user()->id)->first();
 
 
-        // if ($account && $account->ref) {
-        //     $response = $user_account->getVirtualAccount($account->ref);
 
-        //     if ($response['status'] == 'success') {
-        //             $account['account'] = $response['data'];
-        //         }
-        // }
 
         $tokenResult = $user->createToken('Personal Access Token');
         $token = $tokenResult->token;
 
-        if ($request->remember_me)
+        if ($request->remember_me) {
             $token->expires_at = Carbon::now()->addWeeks(4);
+        }
         $token->save();
 
 
@@ -205,7 +177,6 @@ class AuthController extends Controller
             'access_token' => $tokenResult->accessToken,
             'message' => 'login successful',
             'data' => $user->load('wallet'),
-            // 'account' => $account
         ]);
     }
 
@@ -239,7 +210,7 @@ class AuthController extends Controller
         $account = UserAccount::where('user_id', Auth::user()->id)->first();
 
         if ($account && $account->ref) {
-            $user_object = new User;
+            $user_object = new User();
             $virtual_account = $user_object->getVirtualAccount($account->ref);
 
             if ($virtual_account['status'] == 'success') {
@@ -282,7 +253,6 @@ class AuthController extends Controller
             'access_token' => $tokenResult->accessToken,
             'message' => 'login successful',
             'data' => $user->load('wallet'),
-            // 'account' => $account
         ]);
     }
     public function resendVerificationEmail($email)
@@ -311,6 +281,7 @@ class AuthController extends Controller
 
             ]);
         } catch (Exception $e) {
+            report($e);
 
             return response()->json([
                 'status' => 'error',

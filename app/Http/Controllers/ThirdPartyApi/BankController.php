@@ -9,16 +9,14 @@ use Illuminate\Validation\ValidationException;
 use App\Services\FlutterwaveService;
 use Auth;
 
-
-
 class BankController extends Controller
 {
-
     protected $flutterwaveService;
 
-    public function __construct(){
+    public function __construct()
+    {
 
-        $this->flutterwaveService = new FlutterwaveService;
+        $this->flutterwaveService = new FlutterwaveService();
     }
     /**
      * Display a listing of the resource.
@@ -28,7 +26,6 @@ class BankController extends Controller
     public function index()
     {
         return Bank::all();
-        
     }
 
     /**
@@ -39,7 +36,7 @@ class BankController extends Controller
     public function verify_account_number(Request $request)
     {
         $response = $this->flutterwaveService->verifyBankAccountNumber($request->account_number, $request->bank_code);
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'success',
@@ -55,47 +52,43 @@ class BankController extends Controller
      */
     public function store(Request $request)
     {
-        
+
 
         $request->validate([
-            
+
             'account_name' => 'required|string',
             'bank_name' => 'required|string',
             'account_number' => 'required|max:10|min:10',
             'bank_code' => 'required|min:3',
 
         ]);
-        
+
 
         try {
-
-            if(!isset($request->branch_name)){
+            if (!isset($request->branch_name)) {
                 $request['branch_name']   = 'null';
             }
             $request['user_id'] = auth('api')->user()->id;
 
             $user_bank = Bank::create($request->all());
 
-            if($user_bank){
+            if ($user_bank) {
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'success',                    
+                    'message' => 'success',
                 ]);
             }
-            
+
                 throw ValidationException::withMessages([
                     'error' => ['An error occured while trying to save bank details']
                 ]);
-            
-
-
-           
-
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
-
-
     }
 
     /**
@@ -106,21 +99,19 @@ class BankController extends Controller
      */
     public function show($id)
     {
-        
-        $user_account = Bank::where('user_id',$id)->first();
-        if($user_account){
+
+        $user_account = Bank::where('user_id', $id)->first();
+        if ($user_account) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $user_account
             ]);
-        }
-
-        else{
+        } else {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Account details not found',  
-                                
+                'message' => 'Account details not found',
+
             ], 404);
         }
     }
@@ -146,7 +137,7 @@ class BankController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            
+
             'account_name' => 'required|string',
             'bank_name' => 'required|string',
             'account_number' => 'required|max:10|min:10',
@@ -154,30 +145,26 @@ class BankController extends Controller
 
         ]);
 
-        if(!isset($request->branch_name)){
+        if (!isset($request->branch_name)) {
             $request['branch_name']   = 'null';
         }
-        $user_id= auth('api')->user()->id;
+        $user_id = auth('api')->user()->id;
 
 
-        $updateUserBank = Bank::where('user_id',$id)->update(['user_id'=>$user_id, 'account_name'=>$request->account_name,'branch_name'=>$request->branch_name, 'bank_name'=>$request->bank_name, 'account_number'=>$request->account_number, 'bank_code'=>$request->bank_code, ]);
-    
-        
-        if($updateUserBank){
+        $updateUserBank = Bank::where('user_id', $id)->update(['user_id' => $user_id, 'account_name' => $request->account_name,'branch_name' => $request->branch_name, 'bank_name' => $request->bank_name, 'account_number' => $request->account_number, 'bank_code' => $request->bank_code, ]);
+
+
+        if ($updateUserBank) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Update successful',      
+                'message' => 'Update successful',
                 'data' => $updateUserBank
             ]);
         }
-        
+
             throw ValidationException::withMessages([
                 'error' => ['An error occured while trying to update bank details']
             ]);
-    
-    
-    
-    
     }
 
     /**

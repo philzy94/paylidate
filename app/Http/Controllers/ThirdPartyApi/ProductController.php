@@ -12,7 +12,6 @@ use App\Transaction;
 use App\User;
 use Illuminate\Support\Str;
 
-
 /**
  * @group  Product management
  *
@@ -27,11 +26,6 @@ class ProductController extends Controller
      */
     public function index()
     {
-        // $product = Product::where('user_id', auth('api')->user()->id)
-        //     ->orWhere('user_id', auth('api')->user()->id)
-        //     ->with('payment', 'secondary_user', 'user')
-        //     ->orderBy('created_at', 'desc')
-        //     ->get();
         $product = Product::where('user_id', auth('api')->user()->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -60,14 +54,11 @@ class ProductController extends Controller
             'message' => 'success',
             'data' => $product
         ]);
-
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
 
 
 
-    // Product available (enable or disable) 
+    // Product available (enable or disable)
     public function status($id, Request $request)
     {
         $product = Product::where('id', $id)->update([
@@ -92,8 +83,6 @@ class ProductController extends Controller
             'message' => 'success',
             'data' => $product
         ]);
-        //Mail::to($user)->send(new CreateProductMail($user, $product));
-
     }
 
      // creating a product
@@ -103,12 +92,12 @@ class ProductController extends Controller
             'name' => 'required|string',
             'price' => 'required|numeric',
             'quantity' => 'required|numeric',
-            
+
             'transaction_type' => 'required|string',
             'buyer_email' => 'required|string|email',
 
         ]);
-        
+
 
 
 
@@ -127,15 +116,12 @@ class ProductController extends Controller
 
 
             if ($product && $product->transaction_type == 'buy') {
-
                 $secondary_user = User::where('email', $request->get('seller_email'))->first();
                 $transaction['product_id'] = $product->id;
                 $transaction['user_id'] = $secondary_user->id;
                 if ($secondary_user) {
-
                     $transaction['user_id'] = $secondary_user->id;
                 } else {
-
                     $input['email'] = $request['seller_email'];
                     $input['password'] = 'defualt';
                     $input['active'] = false;
@@ -148,7 +134,6 @@ class ProductController extends Controller
                 $transaction['quantity'] = $product->quantity;
                 $t_ref = 'PD_' . Str::random(8) . date('dmyHis');
                 $transaction['transaction_ref'] = $t_ref;
-                //$transaction['amount'] = $product->quantity * $product->price;
                 Transaction::create($transaction);
 
                 $new_transaction = Transaction::where('transaction_ref', $t_ref)->with('product')->first();
@@ -173,20 +158,14 @@ class ProductController extends Controller
                     'data' => $new_transaction
                 ]);
             }
-
-
         } catch (\Exception $e) {
-            return $e;
+            report($e);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occured. Please try again',
+            ], 500);
         }
-        // catch (\Throwable $th) {
-        //     Mail::raw($th->getMessage(), function ($message) {
-        //         $message->from('hello@paylidate.com', 'Paylidate');
-        //         $message->to('syflex360@gmail.com');
-        //         $message->subject('Registration mail Failed');
-        //     });
-        // }
-
-
+            report($th);
     }
 
     // getting single product
@@ -213,17 +192,17 @@ class ProductController extends Controller
         ]);
         $input = $request->all();
         $input['transaction_type'] = "buy";
-        
+
         unset($input['transaction_type']);
-        
-        if(!empty($request->referral_amount) && $request->referral_amount >= $request->price){
+
+        if (!empty($request->referral_amount) && $request->referral_amount >= $request->price) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'referral amount can not be greater than or equal to product price'
             ], 400);
         }
         $product = Product::where('id', $id)->first();
-        if($product->user_id != auth('api')->user()->id){
+        if ($product->user_id != auth('api')->user()->id) {
             return response()->json([
                 'status' => 'Unauthorized',
                 'message' => 'You are not allow to edit the product'
@@ -232,8 +211,7 @@ class ProductController extends Controller
 
 
         // checking if the transaction is buy
-        if($product->transaction_type == 'buy')
-        {
+        if ($product->transaction_type == 'buy') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'You not allow to edit a product you are buying'
@@ -263,7 +241,6 @@ class ProductController extends Controller
         $product = Product::where('id', $id)->get();
 
         if ($product->transaction) {
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'You can not delete this Product'
@@ -278,7 +255,7 @@ class ProductController extends Controller
         }
     }
 
-    // getting a single product 
+    // getting a single product
     public function get_product($slug)
     {
         $product = Product::where('slug', $slug)->with('transaction')->first();

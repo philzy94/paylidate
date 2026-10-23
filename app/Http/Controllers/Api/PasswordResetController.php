@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Mail\ForgotPasswordMail;
@@ -26,8 +27,8 @@ class PasswordResetController extends Controller
             'email' => 'required|string|email',
         ]);
 
-        DB::delete('delete from password_resets where email = ?',[$request->email]);
-        
+        DB::delete('delete from password_resets where email = ?', [$request->email]);
+
 
         $user = User::where('email', $request->email)->first();
         if ($user && ($user->active == false || strlen($user->password) < 8)) {
@@ -36,54 +37,46 @@ class PasswordResetController extends Controller
                 'message' => 'We cannot find a user with that e-mail address.'
             ], 404);
         }
-        
-        if (!$user)
-        return response()->json([
+
+        if (!$user) {
+            return response()->json([
             'status' => 'failed',
             'message' => 'We cannot find a user with that e-mail address.'
-        ], 404);
-        
-        $token = \Str::random(60). $user->id;
-        
-        // $passwordReset = new PasswordReset;
-        // $passwordReset->email = $user->email;
-        // $passwordReset->token = $token;
-        // $passwordReset->save();
+            ], 404);
+        }
+
+        $token = \Str::random(60) . $user->id;
+
 
         $passwordReset = passwordReset::create([
-           
+
             'email' => $request->email,
             'token' => $token,
             'created_at' => Carbon::now(),
-           
+
 
         ]);
 
-        
-        $url = ( 'https://paylidate.com/reset-password/'.$token);         
-        
-        if ($user && $passwordReset)
-        
-        
-        {
+
+        $url = ( 'https://paylidate.com/reset-password/' . $token);
+
+        if ($user && $passwordReset) {
             try {
-            Mail::to( $request->email)->send(new ForgotPasswordMail($user, $url));
+                Mail::to($request->email)->send(new ForgotPasswordMail($user, $url));
                 return response()->json([
                     'status' => 'success',
                     'message' => 'We have e-mailed your password reset link!',
-                        
+
                     ]);
-            } 
-            catch (Exception $e) {
-               
+            } catch (Exception $e) {
+                report($e);
+
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Email sending error'
                 ], 450);
             }
-
-            }
-        
+        }
     }
 
     /**
@@ -96,15 +89,15 @@ class PasswordResetController extends Controller
     public function find($token)
     {
         $passwordReset = PasswordReset::where('token', $token)->first();
-        if (!$passwordReset)
+        if (!$passwordReset) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'This password reset token is invalid.'
             ], 400);
+        }
 
         if (Carbon::parse($passwordReset->created_at)->addMinutes(10)->isPast()) {
-            
-        DB::delete('delete from password_resets where email = ?',[$passwordReset->email]);
+            DB::delete('delete from password_resets where email = ?', [$passwordReset->email]);
 
             return response()->json([
                 'status' => 'expired',
@@ -135,29 +128,29 @@ class PasswordResetController extends Controller
 
         $passwordReset = PasswordReset::where('token', $request->token)->first();
 
-        if (!$passwordReset)
+        if (!$passwordReset) {
             return response()->json([
                 'message' => 'This password reset token is invalid.'
             ], 400);
+        }
 
         $user = User::where('email', $passwordReset->email)->first();
-        if (!$user)
+        if (!$user) {
             return response()->json([
                 'message' => 'We cannot find a user with that e-mail address.'
             ], 400);
+        }
 
         $user->password = bcrypt($request->password);
-        $user->save();        
-        
+        $user->save();
 
-        DB::delete('delete from password_resets where email = ?',[$request->email]);
+
+        DB::delete('delete from password_resets where email = ?', [$request->email]);
 
         return response()->json([
-            'status' => 'success',            
+            'status' => 'success',
             'message' => 'Password reset successful. Please login',
 
         ]);
-    
-        
     }
 }

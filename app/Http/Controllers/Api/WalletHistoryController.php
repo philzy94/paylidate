@@ -23,9 +23,10 @@ class WalletHistoryController extends Controller
                 'data' => $walletHistory
             ]);
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
             ]);
         }
     }

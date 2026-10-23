@@ -9,7 +9,9 @@ use Illuminate\Queue\SerializesModels;
 
 class AddMoneyMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
+
     public $name;
     public $amount;
     public $currency;

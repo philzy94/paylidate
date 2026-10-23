@@ -15,15 +15,14 @@ use Illuminate\Support\Facades\Mail;
 
 class WalletController extends Controller
 {
-
     protected $walletService;
     protected $providusNIPService;
 
     public function __construct()
     {
 
-        $this->walletService = new WalletService;
-        $this->providusNIPService = new ProvidusNIPService;
+        $this->walletService = new WalletService();
+        $this->providusNIPService = new ProvidusNIPService();
     }
 
 
@@ -40,9 +39,10 @@ class WalletController extends Controller
                 'data' => $wallet
             ]);
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
             ]);
         }
     }
@@ -51,7 +51,6 @@ class WalletController extends Controller
     public function create(Request $request)
     {
         try {
-
             $request->validate([
                 'bvn' => 'required|min:11|max:11'
             ]);
@@ -67,7 +66,6 @@ class WalletController extends Controller
             $wallet = $this->walletService->createWallet($user->id, $user->email, $user->name, $request->bvn);
 
             if ($wallet['status'] == "error") {
-
                 return response()->json([
                     'status' => 'error',
                     'message' => $wallet["message"]
@@ -84,9 +82,10 @@ class WalletController extends Controller
                 'data' => $wallet
             ], 201);
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
             ], 400);
         }
     }
@@ -154,16 +153,16 @@ class WalletController extends Controller
                 400
             );
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
             ], 400);
         }
     }
     public function creditWalletByTransfer(Request $request)
     {
         try {
-
             $tx_ref = $request->data['tx_ref'];
             $amount = $request->data['amount'];
             $settlement_id = $request->data['id'];
@@ -220,9 +219,10 @@ class WalletController extends Controller
                 'message' => 'success',
             ], 200);
         } catch (\Exception $e) {
+            report($e);
             return response()->json([
                 'status' => 'error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
             ], 400);
         }
     }
@@ -260,10 +260,11 @@ class WalletController extends Controller
                 }
             }
         } catch (\Exception $e) {
+            report($e);
 
             return response()->json([
                 'status' => 'error',
-                'message' => $e,
+                'message' => 'An error occured. Please try again',
             ], 400);
         }
     }

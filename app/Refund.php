@@ -20,12 +20,12 @@ class Refund extends Model
     {
         return $this->belongsTo('App\User');
     }
-    
+
     public function transaction()
     {
         return $this->belongsTo('App\Transaction');
     }
-    
+
     public function payment()
     {
         return $this->belongsTo('App\Payment');

@@ -15,9 +15,6 @@ use App\Http\Middleware\ThirdPartyApiMiddleware;
 |
 */
 
-// Route::middleware('auth:api')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
 
 
 // This endpoint is to be consume by flutterwave.
@@ -33,9 +30,7 @@ Route::group(['prefix' => 'api'], function () {
     Route::namespace('Api')->group(function () {
 
 
-        //Route::get('transfer', 'WithdrawalController@transfer_to_bank');
 
-        //Route::post('instant-pay/tranfer1', 'InstandpayController@transfer');
         Route::get('instant-get', 'InstandpayController@index');
 
         Route::post('login', 'AuthController@login');
@@ -64,7 +59,7 @@ Route::group(['prefix' => 'api'], function () {
         Route::Post('get-rate', 'PaymentController@get_rate');
         Route::get('get-banks', 'PaymentController@banks');
 
-        // password reset routes    
+        // password reset routes
         Route::post('verify-account', 'BankController@verify_account_number');
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout');
@@ -76,10 +71,6 @@ Route::group(['prefix' => 'api'], function () {
             Route::post('resendVerificationEmail/{email}', 'AuthController@resendVerificationEmail');
             Route::post('verifyEmail/{token}', 'AuthController@verifyEmail');
 
-            // Route::resource('users', 'UsersController');
-            // Route::post('user/avatar', 'UsersController@avatar');
-            // Route::get('user/post', 'UsersController@post');
-            // Route::post('user/validate', 'UsersController@validate_password');
 
             Route::post('send-dispute-chat', 'DisputeChatController@store');
 
@@ -95,8 +86,6 @@ Route::group(['prefix' => 'api'], function () {
             Route::post('credit-wallet', 'WalletController@creditWalletByFL');
             Route::post('debit-wallet', 'WalletController@debitWallet');
             Route::get('get-wallet-history', 'WalletHistoryController@index');
-            // Route::get('get-wallet-balance', 'WalletController@getBalance');
-            // Route::get('get-wallet-bonus', 'WalletController@getBonus');
 
 
             Route::resource('product', 'ProductController');
@@ -127,10 +116,8 @@ Route::group(['prefix' => 'api'], function () {
 
             Route::resource('payment', 'PaymentController');
             Route::post('make-payment', 'PaymentController@make_payment');
-            // Route::get('payments-received', 'PaymentController@payments_received');
 
             Route::resource('card', 'CardController');
-            //Route::post('payment/link', 'PaymentController@getPaymentLink');
             Route::resource('transaction', 'TransactionController');
             Route::resource('account', 'UserAccountController');
 
@@ -142,7 +129,6 @@ Route::group(['prefix' => 'api'], function () {
             Route::get('dashboard', 'DashboardController@index');
 
 
-            // Route::resource('withdraw', 'WithdrawalController');
             Route::get('withdraw-requests', 'WithdrawalController@index');
             Route::post('request-withdrawal', 'WithdrawalController@request_withdrawal');
             Route::post('transfer-to-bank', 'WithdrawalController@transfer_to_bank');

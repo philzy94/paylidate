@@ -16,14 +16,13 @@ class DisputeChatController extends Controller
     public function index($dispute_id)
     {
         $chats =  DisputeChat::where('dispute_id', $dispute_id)->with('user')->first();
-        if($chats){            
+        if ($chats) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $chats
             ]);
-        }
-        else{
+        } else {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No record not found',
@@ -39,7 +38,6 @@ class DisputeChatController extends Controller
      */
     public function create()
     {
-        
     }
 
     /**
@@ -51,41 +49,41 @@ class DisputeChatController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            
+
             'transaction_id' => 'required|numeric',
             'dispute_id' => 'required|numeric',
             'message' => 'required|string',
-            
+
         ]);
 
-        try{
-        $disputeChat = DisputeChat::create([
+        try {
+            $disputeChat = DisputeChat::create([
             'user_id' => auth('api')->user()->id,
             'transaction_id' => $request->transaction_id,
             'dispute_id' => $request->dispute_id,
             'message' => $request->message,
             'sender' => auth('api')->user()->name,
 
-        ]);
-        if($disputeChat){            
-            return response()->json([
+            ]);
+            if ($disputeChat) {
+                return response()->json([
                 'status' => 'success',
                 'message' => 'success',
                 'data' => $disputeChat
-            ]);
-        }
-        else{
-            return response()->json([
+                ]);
+            } else {
+                return response()->json([
                 'status' => 'error',
                 'message' => 'An error occured. Chat not sent',
 
-            ], 400);
-        }
-
-        } 
-            
-            catch (\Exception $e) {
-            return $e;
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json([
+            'status' => 'error',
+            'message' => 'An error occured. Please try again',
+            ], 500);
         }
     }
 
@@ -108,7 +106,6 @@ class DisputeChatController extends Controller
      */
     public function edit(DisputeChat $disputeChat)
     {
-        
     }
 
     /**

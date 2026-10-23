@@ -9,14 +9,15 @@ use Illuminate\Queue\SerializesModels;
 
 class SellerAcceptTransactionMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    
+
     public $secondary_email;
     public $email;
     public $transaction;
