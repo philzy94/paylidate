@@ -49,6 +49,9 @@ jobs:
       - name: Static analysis
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
+      - name: Complexity limits
+        run: vendor/bin/phpmd analyze app --format text --ruleset phpmd.xml
+
       - name: Audit dependencies
         run: composer audit
 

@@ -23,6 +23,7 @@
         "larastan/larastan": "^3.13",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.0",
+        "phpmd/phpmd": "^3.0",
         "phpunit/phpunit": "^11.0",
         "squizlabs/php_codesniffer": "^3.10"
     },
@@ -66,11 +67,13 @@
         ],
         "lint": "phpcs",
         "analyse": "phpstan analyse --memory-limit=1G --no-progress",
+        "complexity": "phpmd analyze app --format text --ruleset phpmd.xml",
         "test": "phpunit",
         "coverage": "phpunit --coverage-text --coverage-clover=coverage.xml",
         "check": [
             "@lint",
             "@analyse",
+            "@complexity",
             "@test"
         ]
     }
