@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+- Admin routes now require an administrator (`admin` middleware); they were open to any logged-in user.
+- Removed the public `/api/get-users` endpoint that dumped every user, wallet and migration.
+- Payouts (withdrawals, refunds, referral bonuses) are validated against the transaction, payment and the
+  requester's own bank account, and the bank transfer is staff-only and built from the stored request.
+  Previously any user could send any amount to any account from the platform balance.
+- Wallet top-ups, instant payments and `make-payment` are confirmed with Flutterwave and use the provider's
+  amount; the transfer webhook secret moved to `FLW_WEBHOOK_HASH` and settlement ids are unique.
+- Profile updates, products, banks, cards, disputes and dispute chats enforce ownership; profile updates
+  can no longer set `is_admin`/`active`/`password`.
+- Fulfilment codes are compared in constant time and rate limited; instant-pay PINs are hashed.
+- Password reset tokens are hashed, expire after an hour and no longer reveal which emails exist.
+
 ### Added
 - `TransactionService`, `AuthService` and typed domain exceptions (`AppException`
   and subclasses) so controllers stay thin and errors map to JSON responses.
@@ -34,6 +47,9 @@ All notable changes to this project are documented here. The format follows
 - Raw exceptions were returned to API clients from many `catch` blocks.
 
 ### Removed
+- `UserController`, `commandController`, `ApikeyController`, the stub account controllers, demo fulfilment
+  endpoints, `RefundService`, `CustomMailService`, the product `accept` and unimplemented delivery routes.
+- Virtual cards are now paid from the user's wallet.
 - Hardcoded Providus password and signature headers, and the comparison against a literal
   bcrypt hash during signup (existing placeholder accounts must be flagged with
   `needs_password_reset = 1`).
