@@ -213,9 +213,9 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             report($e);
             return response()->json([
-                'status'    => 'success',
+                'status'    => 'error',
                 'message'   => 'An error occured. Please try again'
-            ], 400);
+            ], 500);
         }
     }
 }

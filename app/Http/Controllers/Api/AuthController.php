@@ -297,10 +297,9 @@ class AuthController extends Controller
         } catch (\Throwable $th) {
             report($th);
             return response()->json([
-                'status' => 'Error',
+                'status' => 'error',
                 'message' => 'An Error Occured',
-                'data' => $th
-            ]);
+            ], 500);
         }
     }
 
@@ -328,10 +327,9 @@ class AuthController extends Controller
         } catch (\Throwable $th) {
             report($th);
             return response()->json([
-                'status' => 'Error',
+                'status' => 'error',
                 'message' => 'An Error Occured',
-                'data' => $th
-            ]);
+            ], 500);
         }
     }
 }
