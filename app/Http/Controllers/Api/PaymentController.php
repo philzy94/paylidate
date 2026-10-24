@@ -7,8 +7,6 @@ use Illuminate\Http\Request;
 use App\Payment;
 use App\Services\FlutterwaveService;
 use App\Services\PaymentService;
-use App\Transaction;
-use Exception;
 
 /**
  * @group  Payment management
@@ -148,74 +146,35 @@ class PaymentController extends Controller
 
     public function validate_payment(Request $request)
     {
-        $response = $this->flutterwaveService->validate_payment($request->flwRef, $request->otp);
+        $data = $request->validate(['flwRef' => 'required|string', 'otp' => 'required|string']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Payment validation successful',
-            'data' => $response['data']
-        ]);
+        $response = $this->flutterwaveService->validate_payment($data['flwRef'], $data['otp']);
+
+        return $this->success($response['data'] ?? null, 'Payment validation successful');
     }
 
     public function verify_payment(Request $request)
     {
+        $data = $request->validate(['flw_T_id' => 'required|string']);
 
-        $response = $this->flutterwaveService->verify_payment($request->flw_T_id);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'success',
-            'data' => $response['data']
-        ]);
+        return $this->success($this->flutterwaveService->verify_payment($data['flw_T_id'])['data'] ?? null);
     }
 
     public function get_rate(Request $request)
     {
-        $response = $this->flutterwaveService->getRate($request->amount, $request->destination_currency, $request->source_currency);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'success',
-            'data' => $response['data']
+        $data = $request->validate([
+            'amount' => 'required|numeric',
+            'destination_currency' => 'required|string',
+            'source_currency' => 'required|string',
         ]);
+
+        $response = $this->flutterwaveService->getRate($data['amount'], $data['destination_currency'], $data['source_currency']);
+
+        return $this->success($response['data'] ?? null);
     }
 
     public function banks()
     {
-        $response = $this->flutterwaveService->banks();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'success',
-            'data' => $response['data']
-        ]);
-    }
-
-    public function payemnts_received()
-    {
-        $user = auth('api')->user();
-        if (!$user) {
-            return response()->json([
-                'status'    => 'error',
-                'message'   => 'Please Log in'
-            ], 401);
-        }
-        try {
-            $response = Transaction::where('user_id', $user->id)
-                        ->orderByDesc('created_at')
-                        ->get();
-
-            return response()->json([
-                'status'    => 'success',
-                'message'   => 'success',
-                'data'      => $response
-            ], 200);
-        } catch (\Exception $e) {
-            report($e);
-            return response()->json([
-                'status'    => 'error',
-                'message'   => 'An error occured. Please try again'
-            ], 500);
-        }
+        return $this->success($this->flutterwaveService->banks()['data'] ?? []);
     }
 }

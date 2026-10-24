@@ -57,7 +57,7 @@ Route::group(['prefix' => 'api'], function () {
         Route::get('get-banks', 'PaymentController@banks');
 
         // password reset routes
-        Route::post('verify-account', 'BankController@verify_account_number');
+        Route::post('verify-account', 'BankController@verify_account_number')->middleware('throttle:20,1');
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout');
             Route::get('user', 'AuthController@user');
@@ -112,13 +112,12 @@ Route::group(['prefix' => 'api'], function () {
             Route::resource('payment', 'PaymentController')->only(['index', 'show', 'update', 'destroy']);
             Route::post('make-payment', 'PaymentController@make_payment');
 
-            Route::resource('card', 'CardController');
+            Route::resource('card', 'CardController')->only(['index', 'store']);
             Route::resource('transaction', 'TransactionController')->only(['index', 'store']);
-            Route::resource('account', 'UserAccountController');
 
             Route::post('fund', 'CardController@fund');
 
-            Route::resource('user-bank', 'BankController');
+            Route::resource('user-bank', 'BankController')->only(['index', 'store', 'show', 'update']);
 
             //Dashboard Endpoints
             Route::get('dashboard', 'DashboardController@index');
