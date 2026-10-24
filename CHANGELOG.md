@@ -12,6 +12,10 @@ All notable changes to this project are documented here. The format follows
 - Static analysis with PHPStan level 8 (Larastan) in CI and `composer analyse`.
 - Coverage report and a 90% minimum-coverage gate in CI.
 
+### Security
+- No credential is stored in the repository: test values are obviously fake, the test `APP_KEY` is generated per run,
+  and the Docker database password comes from `.env`. CI runs gitleaks on every push.
+
 ### Removed
 - Unreachable code: the `ThirdPartyApi` controllers (no routes pointed at them), the Providus NIP client
   and its `PROVIDUS_*` settings, three unused notification classes and six unused mailables.

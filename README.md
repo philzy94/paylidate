@@ -32,7 +32,8 @@ endpoints live under `/api`.
 
 ```bash
 cp .env.example .env
-sed -i.bak "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env   # fill in the other secrets too
+sed -i.bak "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env
+sed -i.bak "s|^DB_PASSWORD=.*|DB_PASSWORD=$(openssl rand -hex 16)|" .env   # fill in the provider secrets too
 docker compose up --build -d
 ```
 

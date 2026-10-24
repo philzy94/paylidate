@@ -64,7 +64,7 @@ class PaymentControllerTest extends TestCase
 
     public function testPayWithCardReturnsTheAuthorisationUrl()
     {
-        config(['services.flutterwave.rave_base_url' => 'https://rave.test', 'services.flutterwave.secret_key' => 'FLWSECK-abcdefabcdefabcdef']);
+        config(['services.flutterwave.rave_base_url' => 'https://rave.test', 'services.flutterwave.secret_key' => 'test-secret-key']);
         Http::fake(['rave.test/*' => Http::response(['status' => 'success', 'data' => ['authurl' => 'https://bank.test/3ds']])]);
         $this->signIn(User::factory()->create(['name' => 'Ada Lovelace']));
 

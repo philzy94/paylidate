@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders only"
+paths = ['''composer\.lock''']

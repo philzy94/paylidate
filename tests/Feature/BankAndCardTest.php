@@ -21,7 +21,7 @@ class BankAndCardTest extends TestCase
 
         config(['services.flutterwave' => [
             'public_key' => 'pub',
-            'secret_key' => 'FLWSECK-abcdefabcdefabcdef',
+            'secret_key' => 'test-secret-key',
             'base_url' => 'https://flw.test',
             'rave_base_url' => 'https://rave.test',
         ]]);

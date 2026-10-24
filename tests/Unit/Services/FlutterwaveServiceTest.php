@@ -14,8 +14,8 @@ class FlutterwaveServiceTest extends TestCase
         parent::setUp();
 
         config(['services.flutterwave' => [
-            'public_key' => 'FLWPUBK-test',
-            'secret_key' => 'FLWSECK-testsecretkey12345',
+            'public_key' => 'test-public-key',
+            'secret_key' => 'test-secret-key',
             'base_url' => 'https://flw.test',
             'rave_base_url' => 'https://rave.test',
         ]]);
@@ -30,7 +30,7 @@ class FlutterwaveServiceTest extends TestCase
         $this->assertSame('044', $response['data'][0]['code']);
         Http::assertSent(function (Request $request) {
             return $request->url() === 'https://flw.test/v3/banks/NG'
-                && $request->hasHeader('Authorization', 'Bearer FLWSECK-testsecretkey12345');
+                && $request->hasHeader('Authorization', 'Bearer test-secret-key');
         });
     }
 
@@ -94,7 +94,7 @@ class FlutterwaveServiceTest extends TestCase
 
         $this->assertSame('successful', $response['data']['status']);
         Http::assertSent(fn (Request $request) => $request['txref'] === 'PD_REF'
-            && $request['SECKEY'] === 'FLWSECK-testsecretkey12345');
+            && $request['SECKEY'] === 'test-secret-key');
     }
 
     public function testValidatePaymentSendsOtpAndReference()
@@ -105,7 +105,7 @@ class FlutterwaveServiceTest extends TestCase
 
         Http::assertSent(fn (Request $request) => $request['transaction_reference'] === 'FLW-REF'
             && $request['otp'] === '12345'
-            && $request['PBFPubKey'] === 'FLWPUBK-test');
+            && $request['PBFPubKey'] === 'test-public-key');
     }
 
     public function testPayViaCardEncryptsThePayload()
@@ -118,7 +118,7 @@ class FlutterwaveServiceTest extends TestCase
         Http::assertSent(function (Request $request) {
             return $request['alg'] === '3DES-24'
                 && ! str_contains($request['client'], '5531886652142950')
-                && $request['PBFPubKey'] === 'FLWPUBK-test';
+                && $request['PBFPubKey'] === 'test-public-key';
         });
     }
 
@@ -160,7 +160,7 @@ class FlutterwaveServiceTest extends TestCase
 
         Http::assertSent(fn (Request $request) => $request->url() === 'https://flw.test/v3/virtual-cards/card-1/withdraw'
             && $request['amount'] === 500
-            && $request->hasHeader('Authorization', 'Bearer FLWSECK-testsecretkey12345'));
+            && $request->hasHeader('Authorization', 'Bearer test-secret-key'));
         Http::assertSent(fn (Request $request) => $request->url() === 'https://flw.test/v3/virtual-cards/card-1/fund'
             && $request['amount'] === 700
             && $request['debit_currency'] === 'NGN');
