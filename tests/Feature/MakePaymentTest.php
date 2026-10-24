@@ -68,8 +68,29 @@ class MakePaymentTest extends TestCase
         $this->postJson('/api/make-payment', [
             'payment_id' => 'FLW-2',
             'transaction_id' => $transaction->id,
-        ])->assertJson(['status' => 'error', 'message' => 'This Payment has been verified']);
+        ])
+            ->assertStatus(409)
+            ->assertJson([
+                'status' => 'error',
+                'code' => 'payment_already_verified',
+                'message' => 'This Payment has been verified',
+            ]);
 
         $this->assertSame(10, $product->fresh()->quantity);
+    }
+
+    public function testMakePaymentFailsWhenProductIsMissing()
+    {
+        $transaction = Transaction::create(['product_id' => 999999, 'quantity' => 1]);
+        Passport::actingAs(User::factory()->create(), [], 'api');
+
+        $this->postJson('/api/make-payment', [
+            'payment_id' => 'FLW-3',
+            'transaction_id' => $transaction->id,
+        ])
+            ->assertStatus(422)
+            ->assertJson(['code' => 'payment_verification_failed']);
+
+        $this->assertDatabaseMissing('payments', ['payment_id' => 'FLW-3']);
     }
 }

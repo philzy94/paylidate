@@ -37,8 +37,14 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => array_filter(explode(',', env('LOG_STACK', 'single'))),
             'ignore_exceptions' => false,
+        ],
+
+        'sentry' => [
+            'driver' => 'sentry',
+            'level' => 'error',
+            'bubble' => true,
         ],
 
         'single' => [

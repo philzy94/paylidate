@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\PaymentVerificationException;
 use App\Payment;
 use App\Product;
 use App\Referer;
@@ -39,6 +40,10 @@ class PaymentService
      */
     public function recordVerifiedPayment(int $userId, array $attributes): Payment
     {
+        if ($this->exists($attributes['payment_id'])) {
+            throw PaymentVerificationException::alreadyVerified();
+        }
+
         return DB::transaction(function () use ($userId, $attributes) {
             $payment = Payment::create([
                 'user_id' => $userId,
@@ -50,7 +55,11 @@ class PaymentService
             ]);
 
             $transaction = $payment->transaction;
-            $product = Product::findOrFail($transaction->product_id);
+            $product = Product::find($transaction->product_id);
+
+            if (! $product) {
+                throw PaymentVerificationException::failed();
+            }
 
             $split = self::splitAmount($product->price, $product->referral_amount, (int) $transaction->quantity);
 

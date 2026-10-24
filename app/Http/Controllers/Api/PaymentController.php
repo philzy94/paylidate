@@ -81,23 +81,7 @@ class PaymentController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        if ($this->paymentService->exists($data['payment_id'])) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'This Payment has been verified',
-            ]);
-        }
-
-        try {
-            $payment = $this->paymentService->recordVerifiedPayment(auth('api')->user()->id, $data);
-        } catch (Exception $e) {
-            report($e);
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An error occured while trying to verify your payment. Please contact paylidate.com ',
-            ]);
-        }
+        $payment = $this->paymentService->recordVerifiedPayment(auth('api')->user()->id, $data);
 
         return response()->json([
             'status' => 'success',
