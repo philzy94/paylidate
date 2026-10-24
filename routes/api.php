@@ -37,6 +37,8 @@ Route::group(['prefix' => 'api'], function () {
         Route::get('signup/activate/{token}', 'AuthController@signupActivate');
         Route::get('check/email/{email}', 'AuthController@check_email');
         Route::get('product/{slug}', 'ProductController@get_product');
+        Route::get('catalog/{id}', 'ProductController@get_catalog');
+        Route::get('catalog/{id}', 'ProductController@get_catalog');
 
 
         Route::get('transaction/{T_ref}', 'TransactionController@get_transaction');
@@ -81,12 +83,12 @@ Route::group(['prefix' => 'api'], function () {
             Route::get('get-wallet-history', 'WalletHistoryController@index');
 
 
-            Route::resource('product', 'ProductController');
-
-            Route::get('product/accept/{id}', 'ProductController@accept');
-            Route::get('product/status/{id}', 'ProductController@status');
+            Route::resource('product', 'ProductController')->only(['index', 'store', 'show', 'update', 'destroy']);
+            Route::post('product/{id}/recommend', 'ProductController@product_recommendation');
+            Route::delete('product/{id}/recommend', 'ProductController@remove_product_recommendation');
+            Route::post('product/status/{id}', 'ProductController@status');
             Route::post('product/update/{id}', 'ProductController@update');
-            Route::get('product/status/delivered/{id}', 'ProductController@delivered');
+            Route::post('product/status/delivered/{id}', 'ProductController@delivered');
 
             Route::post('instant-pay/tranfer', 'InstandpayController@transfer');
             Route::post('instant/tranfer', 'InstandpayController@transfer');

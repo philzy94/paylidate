@@ -314,7 +314,7 @@ class TransactionService
         }
     }
 
-    protected function emailDetails(Transaction $transaction): array
+    public function emailDetails(Transaction $transaction): array
     {
         $product = $transaction->product;
 
