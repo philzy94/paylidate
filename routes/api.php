@@ -29,10 +29,6 @@ Route::group(['prefix' => 'api'], function () {
 
     Route::namespace('Api')->group(function () {
 
-
-
-        Route::get('instant-get', 'InstandpayController@index');
-
         Route::post('login', 'AuthController@login');
         Route::post('signup', 'AuthController@signup');
         Route::post('signup/referral/{ref}', 'AuthController@refferal_signup');
@@ -46,10 +42,8 @@ Route::group(['prefix' => 'api'], function () {
         Route::get('transaction/{T_ref}', 'TransactionController@get_transaction');
 
         // Fulfillment Route
-        Route::get('fulfillment/abcdef', 'FulfilmentController@static');
-        Route::post('fulfillment/abcdef', 'FulfilmentController@static_post');
         Route::get('fulfillment/{hash}', 'FulfilmentController@get_transaction');
-        Route::post('fulfillment/{hash}', 'FulfilmentController@confirm_fufilment');
+        Route::post('fulfillment/{hash}', 'FulfilmentController@confirm_fufilment')->middleware('throttle:fulfilment');
 
         Route::group(['prefix' => 'password'], function () {
             Route::post('create', 'PasswordResetController@create');
@@ -79,8 +73,6 @@ Route::group(['prefix' => 'api'], function () {
             Route::post('resolve-dispute', 'DisputeController@resolve_dispute');
             Route::get('transaction-disputes/{transaction_id}', 'DisputeController@getTransactionDisputes');
 
-            Route::get('product/resolve-dispute/{id}', 'ProductController@resolve_dispute');
-
             // wallet routes
             Route::get('get-wallet', 'WalletController@index');
             Route::post('create-wallet', 'WalletController@create');
@@ -94,11 +86,7 @@ Route::group(['prefix' => 'api'], function () {
             Route::get('product/accept/{id}', 'ProductController@accept');
             Route::get('product/status/{id}', 'ProductController@status');
             Route::post('product/update/{id}', 'ProductController@update');
-
-            Route::get('product/status/delivery/{id}', 'ProductController@delivery');
             Route::get('product/status/delivered/{id}', 'ProductController@delivered');
-            Route::get('product/status/recieved/{id}', 'ProductController@recieved');
-            Route::get('product/status/canceled/{id}', 'ProductController@canceled');
 
             Route::post('instant-pay/tranfer', 'InstandpayController@transfer');
             Route::post('instant/tranfer', 'InstandpayController@transfer');
@@ -151,12 +139,10 @@ Route::group(['prefix' => 'api'], function () {
             Route::post('transfer-referral-bonus-to-bank', 'ReferralWidrawalController@transfer_to_bank');
         });
     });
-    Route::get('get-users', 'UserController@index');
-    Route::get('get-users/{id}', 'UserController@indexx');
 
 
 
-    Route::group(['middleware' => 'auth:api', 'prefix' => 'admin'], function () {
+    Route::group(['middleware' => ['auth:api', 'admin'], 'prefix' => 'admin'], function () {
         Route::get('users', 'AdminController@users');
         Route::get('users/{startDate}/{endDate}', 'AdminController@userBtwnDate');
         Route::get('dashboard', 'AdminController@numbers_of');
@@ -170,8 +156,9 @@ Route::group(['prefix' => 'api'], function () {
         Route::group(['prefix' => 'v1'], function () {
 
             Route::middleware([ThirdPartyApiMiddleware::class])->group(function () {
-
-                Route::get('get-users', '\App\Http\Controllers\UserController@index');
+                Route::get('ping', function () {
+                    return response()->json(['status' => 'success', 'message' => 'pong']);
+                });
             });
         });
     });

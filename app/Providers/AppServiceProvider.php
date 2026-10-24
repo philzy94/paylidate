@@ -21,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // The fulfilment code is a 5 digit number: keep brute forcing impractical.
+        RateLimiter::for('fulfilment', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
         if ($this->app->isProduction()) {
             $url->forceScheme('https');
         }

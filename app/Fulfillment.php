@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Fulfillment extends Model
 {
     protected $fillable = [
-        'user_id', 'transaction_id', 'transaction_ref', 'code'
+        'user_id', 'transaction_id', 'transaction_ref', 'code', 'status'
     ];
 
     const PENDING = 0;
