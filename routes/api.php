@@ -123,12 +123,12 @@ Route::group(['prefix' => 'api'], function () {
 
             Route::get('withdraw-requests', 'WithdrawalController@index');
             Route::post('request-withdrawal', 'WithdrawalController@request_withdrawal');
-            Route::post('transfer-to-bank', 'WithdrawalController@transfer_to_bank');
+            Route::post('transfer-to-bank', 'WithdrawalController@transfer_to_bank')->middleware('admin');
 
 
             Route::get('refund-requests', 'RefundController@index');
             Route::post('request-refund', 'RefundController@request_Refund');
-            Route::post('transfer-to-buyer-bank', 'RefundController@transfer_to_bank');
+            Route::post('transfer-to-buyer-bank', 'RefundController@transfer_to_bank')->middleware('admin');
 
 
             Route::get('referral-bonus', 'RefererController@index');
@@ -136,7 +136,7 @@ Route::group(['prefix' => 'api'], function () {
 
             Route::post('request-referral-bonus-withdrawal', 'ReferralWidrawalController@request_withdrawal');
             Route::get('referral-withdraw-requests', 'ReferralWidrawalController@index');
-            Route::post('transfer-referral-bonus-to-bank', 'ReferralWidrawalController@transfer_to_bank');
+            Route::post('transfer-referral-bonus-to-bank', 'ReferralWidrawalController@transfer_to_bank')->middleware('admin');
         });
     });
 
