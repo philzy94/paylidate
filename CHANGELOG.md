@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-24
+
 ### Security
 - Admin routes now require an administrator (`admin` middleware); they were open to any logged-in user.
 - Removed the public `/api/get-users` endpoint that dumped every user, wallet and migration.
@@ -20,6 +22,8 @@ All notable changes to this project are documented here. The format follows
 - Password reset tokens are hashed, expire after an hour and no longer reveal which emails exist.
 
 ### Added
+- `paylidate:install` command and a Docker entrypoint that migrates and sets up Passport on start.
+- Docker smoke test (`docker/smoke-test.sh`) run in CI against the compose stack.
 - `TransactionService`, `AuthService` and typed domain exceptions (`AppException`
   and subclasses) so controllers stay thin and errors map to JSON responses.
 - `needs_password_reset` column on `users`; flagged accounts can be claimed by signing up.
