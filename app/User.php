@@ -21,7 +21,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'username', 'email_token', 'password', 'phone', 'avatar', 'active', 'is_admin', 'is_staff', 'referral_token', 'referred_by'
+        'name', 'email', 'username', 'email_token', 'password', 'phone', 'avatar', 'active', 'is_admin', 'is_staff', 'needs_password_reset', 'referral_token', 'referred_by'
     ];
 
     /**
@@ -32,6 +32,15 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token', 'email_token'
     ];
+
+    /**
+     * Whether a signup for this email may take over the existing account:
+     * deactivated, flagged for reset, or created without a usable password.
+     */
+    public function canBeClaimed(): bool
+    {
+        return ! $this->active || $this->needs_password_reset || strlen($this->password) < 8;
+    }
 
     public function setEmailAttribute($value)
     {

@@ -35,6 +35,7 @@ Route::group(['prefix' => 'api'], function () {
 
         Route::post('login', 'AuthController@login');
         Route::post('signup', 'AuthController@signup');
+        Route::post('signup/referral/{ref}', 'AuthController@refferal_signup');
 
 
         Route::get('signup/activate/{token}', 'AuthController@signupActivate');

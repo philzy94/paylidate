@@ -8,6 +8,7 @@ use App\Mail\RegistrationMail;
 use App\Rating;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
+use App\Services\AuthService;
 use App\User;
 use App\UserAccount;
 use Auth;
@@ -25,166 +26,43 @@ class AuthController extends Controller
     }
 
 
-    public function signup(Request $request)
+    public function signup(Request $request, AuthService $auth)
     {
-        try {
-            $request->validate([
-                'name' => 'required|string|min:3',
-                'email' => 'required|string|email|max:255',
-                'password' => 'required',
-                'password_confirmation' => 'required|same:password',
-                'phone' => 'required|unique:users',
+        $data = $request->validate([
+            'name' => 'required|string|min:3',
+            'email' => 'required|string|email|max:255',
+            'password' => 'required',
+            'password_confirmation' => 'required|same:password',
+            'phone' => 'required|unique:users',
+        ]);
 
+        $result = $auth->register($data);
 
-            ]);
-
-
-
-
-            $user = User::where('email', $request->get('email'))->first();
-
-
-            if ($user && ($user->active == false || strlen($user->password) < 8 || $user->password == '$2y$10$XuFENwoCWjr5NbqK1bmtKuGfQSY87WO785OC2rCoN1V471bsMcb9q')) {
-                $user->update([
-                    'name' => $request->name,
-                    'phone' => $request->phone,
-                    'password' => bcrypt($request->password),
-                    'active' => true,
-                    'referral_token' => Str::random(10) . date('dmyHis'),
-                ]);
-
-                $tokenResult = $user->createToken('Personal Access Token');
-                $token = $tokenResult->token;
-                $token->save();
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'User created',
-                    'access_token' => $tokenResult->accessToken,
-                    'data' => $user,
-
-                ]);
-            } elseif ($user) {
-                return response()->json([
-                    'status' => 'exist',
-                    'message' => 'User already exist. please login',
-                ], 409);
-            } else {
-                $emailToken = Str::random(8) . date('dmyHis');
-                $verifyEmailLink = "https://paylidate.com/verify/" . $emailToken;
-                $user_name = 'user_' . rand(1, 400) . date('dmyHis');
-
-
-                $input = $request->all();
-                $input['password'] = bcrypt($input['password']);
-                $input['email_token'] = $emailToken;
-                $input['username'] = $user_name;
-                $input['referral_token'] = Str::random(10) . date('dmyHis');
-                $user = User::create($input);
-
-                $tokenResult = $user->createToken('Personal Access Token');
-                $token = $tokenResult->token;
-                $token->save();
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'User created',
-                    'access_token' => $tokenResult->accessToken,
-                    'data' => $user,
-
-                ]);
-            }
-        } catch (\Exception $e) {
-            report($e);
-            return response()->json([
-                'status' => 'Error',
-                'message' => 'An error occured. Please try again',
-
-
-            ]);
-        }
+        return $this->registered($result);
     }
 
-    public function refferal_signup(Request $request, $ref)
+
+    public function refferal_signup(Request $request, AuthService $auth, $ref)
     {
-        try {
-            $request->validate([
-                'name' => 'required|string|min:3',
-                'email' => 'required|string|email|max:255',
-                'password' => 'required',
-                'password_confirmation' => 'required|same:password',
-                'phone' => 'required|unique:users',
+        $data = $request->validate([
+            'name' => 'required|string|min:3',
+            'email' => 'required|string|email|max:255',
+            'password' => 'required',
+            'password_confirmation' => 'required|same:password',
+            'phone' => 'required|unique:users',
+        ]);
 
+        return $this->registered($auth->register($data, $ref));
+    }
 
-            ]);
-
-
-
-
-            $user = User::where('email', $request->get('email'))->first();
-
-
-            if ($user && ($user->active == false || strlen($user->password) < 8 || $user->password == '$2y$10$XuFENwoCWjr5NbqK1bmtKuGfQSY87WO785OC2rCoN1V471bsMcb9q')) {
-                $user->update([
-                    'name' => $request->name,
-                    'phone' => $request->phone,
-                    'password' => bcrypt($request->password),
-                    'active' => true,
-                    'referral_token' => Str::random(10) . date('dmyHis'),
-                ]);
-
-                $tokenResult = $user->createToken('Personal Access Token');
-                $token = $tokenResult->token;
-                $token->save();
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'User created',
-                    'access_token' => $tokenResult->accessToken,
-                    'data' => $user,
-
-                ]);
-            } elseif ($user) {
-                return response()->json([
-                    'status' => 'exist',
-                    'message' => 'User already exist. please login',
-                ], 409);
-            } else {
-                $emailToken = Str::random(8) . date('dmyHis');
-                $verifyEmailLink = "https://paylidate.com/verify/" . $emailToken;
-                $user_name = 'user_' . rand(1, 400) . date('dmyHis');
-                $reffer = User::where('referral_token', $ref)->get();
-
-
-                $input = $request->all();
-                $input['password'] = bcrypt($input['password']);
-                $input['email_token'] = $emailToken;
-                $input['username'] = $user_name;
-                $input['referred_by'] = $reffer->id;
-                $input['referral_token'] = Str::random(10) . date('dmyHis');
-                $user = User::create($input);
-
-                $tokenResult = $user->createToken('Personal Access Token');
-                $token = $tokenResult->token;
-                $token->save();
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'User created',
-                    'access_token' => $tokenResult->accessToken,
-                    'data' => $user,
-
-                ]);
-            }
-        } catch (\Exception $e) {
-            report($e);
-            return response()->json([
-                'status' => 'Error',
-                'message' => 'An error occured. Please try again',
-
-
-            ]);
-        }
+    protected function registered(array $result)
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User created',
+            'access_token' => $result['token'],
+            'data' => $result['user'],
+        ]);
     }
 
     /**
@@ -198,55 +76,20 @@ class AuthController extends Controller
      * @return [string] token_type
      * @return [string] expires_at
      */
-    public function login(Request $request)
+    public function login(Request $request, AuthService $auth)
     {
         $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
 
-
-        $credentials['email']   = strtolower($request->email);
-        $credentials['password']   = $request->password;
-        $credentials['deleted_at'] = null;
-
-
-        if (!Auth::attempt($credentials)) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Wrong email and password'
-            ], 401);
-        }
-
-
-        if (!Auth::user()->active) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Your account is not activated'
-            ], 401);
-        }
-
-        $user = User::where('id', Auth::user()->id)->first();
-
-
-
-
-
-        $tokenResult = $user->createToken('Personal Access Token');
-        $token = $tokenResult->token;
-
-        if ($request->remember_me) {
-            $token->expires_at = Carbon::now()->addWeeks(4);
-        }
-        $token->save();
-
-
+        $result = $auth->login($request->email, $request->password, (bool) $request->remember_me);
 
         return response()->json([
             'status' => 'success',
-            'access_token' => $tokenResult->accessToken,
+            'access_token' => $result['token'],
             'message' => 'login successful',
-            'data' => $user
+            'data' => $result['user'],
         ]);
     }
 

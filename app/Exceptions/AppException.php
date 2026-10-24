@@ -27,6 +27,13 @@ class AppException extends RuntimeException
         $this->errorCode = $errorCode ?? $this->errorCode;
     }
 
+    public function withStatus(string $status): self
+    {
+        $this->errorStatus = $status;
+
+        return $this;
+    }
+
     public function httpStatus(): int
     {
         return $this->httpStatus;
