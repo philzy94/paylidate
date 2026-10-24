@@ -7,18 +7,23 @@ use Illuminate\Support\Facades\Http;
 
 class ProvidusNIPService
 {
-    public $baseURLBank = 'http://bank_url/api';
-    public $baseURL = 'http://154.113.16.142:8088/appdevapi/api/';
-    protected $username = 'username';
-    protected $password = 'password';
-    protected $header = array(
-        'Content-Type: application/json',
-        'X-Auth-Signature: BE09BEE831CF262226B426E39BD1092AF84DC63076D4174FAC78A2261F9A3D6E59744983B8326B69CDF2963FE314DFC89635CFA37A40596508DD6EAAB09402C7',
-        'Client-Id: dGVzdF9Qcm92aWR1cw=='
-    );
+    public $baseURL;
+    protected $username;
+    protected $password;
+    protected $header;
 
     public function __construct()
     {
+        $config = config('services.providus');
+
+        $this->baseURL = $config['base_url'];
+        $this->username = $config['username'];
+        $this->password = $config['password'];
+        $this->header = [
+            'Content-Type: application/json',
+            'X-Auth-Signature: ' . $config['auth_signature'],
+            'Client-Id: ' . $config['client_id'],
+        ];
     }
 
     // create new virtual account

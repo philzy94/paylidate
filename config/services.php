@@ -37,6 +37,14 @@ return [
         'rave_base_url' => env('RAVE_BASE_URL', 'https://ravesandboxapi.flutterwave.com'),
     ],
 
+    'providus' => [
+        'base_url' => env('PROVIDUS_BASE_URL', ''),
+        'username' => env('PROVIDUS_USERNAME'),
+        'password' => env('PROVIDUS_PASSWORD'),
+        'auth_signature' => env('PROVIDUS_AUTH_SIGNATURE'),
+        'client_id' => env('PROVIDUS_CLIENT_ID'),
+    ],
+
     'twilio' => [
         'sid' => env('TWILIO_SID'),
         'token' => env('TWILIO_AUTH_TOKEN'),
