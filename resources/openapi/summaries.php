@@ -1,0 +1,110 @@
+<?php
+
+/**
+ * Human-readable summary and tag for every API operation, keyed by "METHOD uri".
+ * `php artisan paylidate:openapi` reads this file; OpenApiSpecTest fails when a
+ * route has no entry here or an entry points at a route that no longer exists.
+ *
+ * @return array<string, array{0: string, 1: string}> [summary, tag]
+ */
+return [
+    'POST api/signup' => ['Register an account, or claim a placeholder account', 'Account'],
+    'POST api/signup/referral/{ref}' => ['Register through a referral link', 'Account'],
+    'GET api/signup/activate/{token}' => ['Activate an account from the emailed token', 'Account'],
+    'POST api/login' => ['Log in and receive a bearer token', 'Account'],
+    'GET api/logout' => ['Revoke the current token', 'Account'],
+    'GET api/user' => ['Get the signed-in user', 'Account'],
+    'POST api/user/update' => ['Update the signed-in user\'s profile', 'Account'],
+    'GET api/check/email/{email}' => ['Check whether an account exists for an email', 'Account'],
+    'POST api/verifyEmail/{token}' => ['Verify an email address', 'Account'],
+    'POST api/resendVerificationEmail/{email}' => ['Resend the verification email', 'Account'],
+    'GET api/verify-number/{phone_number}' => ['Send a phone verification code', 'Account'],
+    'POST api/password/create' => ['Request a password reset link', 'Account'],
+    'GET api/password/find/{token}' => ['Validate a password reset token', 'Account'],
+    'POST api/password/reset' => ['Set a new password with a reset token', 'Account'],
+    'POST api/rate-user/{id}' => ['Rate another user', 'Account'],
+    'GET api/get-user-rate/{id}' => ['Get the ratings of a user', 'Account'],
+    'POST api/get-rate' => ['Get a currency exchange rate', 'Account'],
+    'GET api/dashboard' => ['Get the signed-in user\'s dashboard figures', 'Referrals'],
+    'GET api/referral' => ['List the user\'s referrals', 'Referrals'],
+    'GET api/referral-bonus' => ['Get the user\'s referral bonus', 'Referrals'],
+
+    'GET api/transaction' => ['List the user\'s escrow transactions', 'Transactions'],
+    'POST api/transaction' => ['Create an escrow transaction', 'Transactions'],
+    'GET api/transaction/{T_ref}' => ['Get a transaction by its reference', 'Transactions'],
+    'POST api/transaction/accept/{id}' => ['Seller accepts a transaction', 'Transactions'],
+    'POST api/transaction/decline/{id}' => ['Seller declines a transaction', 'Transactions'],
+    'POST api/transaction/confirm/{id}' => ['Buyer confirms delivery and releases the funds', 'Transactions'],
+    'POST api/transaction/report-transaction/{id}' => ['Buyer reports a problem within the report window', 'Transactions'],
+    'POST api/transaction/reslove-report/{id}/{sellerEmail}' => ['Resolve a reported transaction', 'Transactions'],
+    'POST api/transaction/cancel/{id}' => ['Cancel a transaction', 'Transactions'],
+    'GET api/fulfillment/{hash}' => ['Show the seller fulfilment page for a link', 'Transactions'],
+    'POST api/fulfillment/{hash}' => ['Seller confirms fulfilment through a link', 'Transactions'],
+
+    'POST api/make-payment' => ['Record a payment, verified with Flutterwave (buyer only)', 'Payments'],
+    'POST api/payment/card' => ['Start a card payment', 'Payments'],
+    'POST api/payment/validate' => ['Validate a card payment with the OTP', 'Payments'],
+    'POST api/payment/verify' => ['Verify a card payment', 'Payments'],
+    'GET api/payment' => ['List the user\'s payments', 'Payments'],
+    'GET api/payment/{payment}' => ['Get one of the user\'s payments', 'Payments'],
+    'PUT api/payment/{payment}' => ['Update one of the user\'s payments', 'Payments'],
+    'DELETE api/payment/{payment}' => ['Delete one of the user\'s payments', 'Payments'],
+
+    'POST api/create-wallet' => ['Open a wallet with a virtual account', 'Wallet'],
+    'POST api/fund' => ['Top up the wallet through Flutterwave', 'Wallet'],
+    'POST api/credit-wallet' => ['Credit the wallet', 'Wallet'],
+    'POST api/debit-wallet' => ['Spend from the wallet', 'Wallet'],
+    'GET api/get-wallet' => ['Get the wallet balance', 'Wallet'],
+    'GET api/get-wallet-history' => ['List wallet history', 'Wallet'],
+
+    'POST api/request-withdrawal' => ['Request a withdrawal', 'Payouts'],
+    'GET api/withdraw-requests' => ['List the user\'s withdrawal requests', 'Payouts'],
+    'POST api/request-refund' => ['Request a refund', 'Payouts'],
+    'GET api/refund-requests' => ['List the user\'s refund requests', 'Payouts'],
+    'POST api/request-referral-bonus-withdrawal' => ['Request a referral bonus withdrawal', 'Payouts'],
+    'GET api/referral-withdraw-requests' => ['List referral bonus withdrawal requests', 'Payouts'],
+    'POST api/transfer-to-bank' => ['Admin: pay a withdrawal request to the bank', 'Admin'],
+    'POST api/transfer-to-buyer-bank' => ['Admin: pay a refund to the buyer\'s bank', 'Admin'],
+    'POST api/transfer-referral-bonus-to-bank' => ['Admin: pay a referral bonus to the bank', 'Admin'],
+
+    'POST api/instant-pay/tranfer' => ['Create an instant payment link', 'Instant pay'],
+    'POST api/instant/tranfer' => ['Create an instant payment link (alias)', 'Instant pay'],
+    'POST api/instant-pay/verify' => ['Verify an instant payment link with the PIN', 'Instant pay'],
+    'POST api/instant-pay/withdraw' => ['Withdraw an instant payment to a bank account', 'Instant pay'],
+    'GET api/instant-pay/history-send' => ['List instant payments sent', 'Instant pay'],
+    'GET api/instant-pay/history-receive' => ['List instant payments received', 'Instant pay'],
+
+    'GET api/user-bank' => ['List the user\'s saved bank accounts', 'Banks and cards'],
+    'POST api/user-bank' => ['Save a bank account', 'Banks and cards'],
+    'GET api/user-bank/{user_bank}' => ['Get a saved bank account', 'Banks and cards'],
+    'PUT api/user-bank/{user_bank}' => ['Update a saved bank account', 'Banks and cards'],
+    'GET api/get-banks' => ['List supported banks', 'Banks and cards'],
+    'POST api/verify-account' => ['Resolve a bank account name', 'Banks and cards'],
+    'GET api/card' => ['List the user\'s saved cards', 'Banks and cards'],
+    'POST api/card' => ['Save a card', 'Banks and cards'],
+
+    'GET api/product' => ['List the user\'s products', 'Products'],
+    'POST api/product' => ['Create a product', 'Products'],
+    'GET api/product/{product}' => ['Get one of the user\'s products', 'Products'],
+    'PUT api/product/{product}' => ['Update one of the user\'s products', 'Products'],
+    'DELETE api/product/{product}' => ['Delete one of the user\'s products', 'Products'],
+    'GET api/product/{slug}' => ['Get a public product by slug', 'Products'],
+    'GET api/catalog/{id}' => ['Get a seller\'s public catalogue', 'Products'],
+    'POST api/product/update/{id}' => ['Update a product (form-friendly alias)', 'Products'],
+    'POST api/product/status/{id}' => ['Change a product\'s status', 'Products'],
+    'POST api/product/status/delivered/{id}' => ['Mark a product as delivered', 'Products'],
+    'POST api/product/{id}/recommend' => ['Recommend a product', 'Products'],
+    'DELETE api/product/{id}/recommend' => ['Remove a product recommendation', 'Products'],
+
+    'POST api/open-dispute' => ['Open a dispute on a transaction', 'Disputes'],
+    'POST api/resolve-dispute' => ['Resolve a dispute', 'Disputes'],
+    'POST api/send-dispute-chat' => ['Post a message in a dispute chat', 'Disputes'],
+    'GET api/dispute-chat/{dispute_id}' => ['List the messages of a dispute', 'Disputes'],
+    'GET api/transaction-disputes/{transaction_id}' => ['List the disputes of a transaction', 'Disputes'],
+
+    'GET api/admin/dashboard' => ['Admin: platform totals', 'Admin'],
+    'GET api/admin/users' => ['Admin: list users', 'Admin'],
+    'GET api/admin/users/{startDate}/{endDate}' => ['Admin: list users created in a date range', 'Admin'],
+
+    'GET api/v1/ping' => ['Partner API key health check', 'Partner'],
+];

@@ -1,5 +1,8 @@
 # API reference
 
+The same operations are described in [openapi.json](openapi.json) (OpenAPI 3.0), which is
+generated from the routes with `php artisan paylidate:openapi` and checked by the test suite.
+
 Base path: `/api`. All bodies are JSON. Authenticated routes need
 `Authorization: Bearer <token>` (obtained from `POST /api/login` or `/api/signup`).
 Errors are JSON: `{ "status": false, "message": "...", "code": "machine_code" }`
