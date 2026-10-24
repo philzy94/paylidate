@@ -70,6 +70,7 @@ Route::group(['prefix' => 'api'], function () {
 
 
             Route::post('send-dispute-chat', 'DisputeChatController@store');
+            Route::get('dispute-chat/{dispute_id}', 'DisputeChatController@index');
 
             Route::post('open-dispute', 'DisputeController@open_dispute');
             Route::post('resolve-dispute', 'DisputeController@resolve_dispute');

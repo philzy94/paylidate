@@ -12,14 +12,14 @@ class DisputeChat extends Model
 
     public function user()
     {
-        return $this->hasOne('App\User');
+        return $this->belongsTo('App\User');
     }
     public function dispute()
     {
-        return $this->hasOne('App\Dispute');
+        return $this->belongsTo('App\Dispute');
     }
     public function transaction()
     {
-        return $this->hasOne('App\Transaction');
+        return $this->belongsTo('App\Transaction');
     }
 }
