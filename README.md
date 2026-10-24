@@ -22,8 +22,7 @@ cp .env.example .env
 php artisan key:generate
 # fill in DB_*, FLW_PUBLIC_KEY, FLW_SECRET_KEY, TWILIO_* and mail settings in .env
 php artisan migrate
-php artisan passport:keys
-php artisan passport:client --personal
+php artisan paylidate:install   # Passport keys and personal access client
 ```
 
 Serve locally with `php artisan serve`. The API is on http://localhost:8000 and all
@@ -35,12 +34,13 @@ endpoints live under `/api`.
 cp .env.example .env
 sed -i.bak "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env   # fill in the other secrets too
 docker compose up --build -d
-docker compose exec app php artisan migrate --force
-docker compose exec app php artisan passport:keys --force
-docker compose exec app php artisan passport:client --personal --name=Paylidate --provider=users --no-interaction
 ```
 
-The API is then on http://localhost:8000 (MySQL runs in the `db` service).
+On start the container waits for MySQL, runs the migrations and `php artisan paylidate:install`
+(Passport keys and personal access client), so the API is ready on http://localhost:8000
+once the logs show Apache running (`docker compose logs -f app`). `./docker/smoke-test.sh` signs up a user and checks the main
+access rules against the running stack (CI runs it on every push). Without Docker, run
+`php artisan migrate` and `php artisan paylidate:install` yourself.
 
 ### Running the tests
 

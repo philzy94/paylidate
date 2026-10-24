@@ -9,6 +9,7 @@ services:
       DB_DATABASE: paylidate
       DB_USERNAME: paylidate
       DB_PASSWORD: secret
+      RUN_MIGRATIONS: "true"
     depends_on:
       db:
         condition: service_healthy

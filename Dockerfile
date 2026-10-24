@@ -14,6 +14,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 WORKDIR /var/www/html
 COPY --from=vendor /app/vendor ./vendor
 COPY . .
+RUN php artisan package:discover --ansi
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
+RUN chmod +x docker/entrypoint.sh \
+    && cp docker/apache-laravel.conf /etc/apache2/conf-available/laravel.conf \
+    && a2enconf laravel
 EXPOSE 80
+ENTRYPOINT ["docker/entrypoint.sh"]
