@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Exceptions\AuthException;
+use App\Mail\RegistrationMail;
+use App\Rating;
 use App\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -120,5 +123,101 @@ class AuthService
     protected function referralToken(): string
     {
         return Str::random(10) . date('dmyHis');
+    }
+
+    /**
+     * Update the caller's own profile. Only whitelisted fields can change, so a client
+     * can never promote itself to admin or reactivate an account.
+     */
+    public function updateProfile(User $user, array $data): User
+    {
+        $user->update(array_intersect_key($data, array_flip(['name', 'phone', 'avatar'])));
+
+        return $user->fresh();
+    }
+
+    /**
+     * Confirm the caller's email address with the token that was mailed to them.
+     *
+     * @throws AuthException
+     */
+    public function verifyEmail(User $user, string $token): User
+    {
+        if (! $user->email_token || ! hash_equals($user->email_token, $token)) {
+            throw AuthException::tokenInvalid();
+        }
+
+        $user->forceFill(['email_verified_at' => now(), 'email_token' => null])->save();
+
+        return $user;
+    }
+
+    /**
+     * Activate an account from the link in the signup email.
+     *
+     * @throws AuthException
+     */
+    public function activate(string $token): User
+    {
+        $user = User::where('email_token', $token)->first();
+
+        if (! $user) {
+            throw AuthException::tokenInvalid();
+        }
+
+        $user->forceFill(['active' => true, 'email_verified_at' => now(), 'email_token' => null])->save();
+
+        return $user;
+    }
+
+    /**
+     * Email a fresh verification link to the caller.
+     */
+    public function resendVerification(User $user): void
+    {
+        $token = Str::random(8) . date('dmyHis');
+
+        $user->forceFill(['email_verified_at' => null, 'email_token' => $token])->save();
+
+        Mail::to($user->email)->send(new RegistrationMail($user, config('app.frontend_url') . '/verify/' . $token));
+    }
+
+    /**
+     * Rate another user from 1 to 5; rating again replaces the earlier score.
+     *
+     * @throws AuthException
+     */
+    public function rate(User $rater, int $ratedUserId, int $score): Rating
+    {
+        if ($rater->id === $ratedUserId) {
+            throw AuthException::cannotRateSelf();
+        }
+
+        if (! User::whereKey($ratedUserId)->exists()) {
+            throw AuthException::userNotFound();
+        }
+
+        return Rating::updateOrCreate(
+            ['user_id' => $rater->id, 'rated_user_id' => $ratedUserId],
+            ['rating' => $score]
+        );
+    }
+
+    /**
+     * @return array{average: float, count: int}
+     */
+    public function ratingsFor(int $userId): array
+    {
+        $ratings = Rating::where('rated_user_id', $userId);
+
+        return [
+            'average' => round((float) $ratings->avg('rating'), 2),
+            'count' => $ratings->count(),
+        ];
+    }
+
+    public function emailExists(string $email): bool
+    {
+        return User::where('email', strtolower($email))->exists();
     }
 }

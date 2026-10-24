@@ -36,6 +36,9 @@ return [
 
     'domain' => env('DOMAIN'),
 
+    // Base URL of the web client, used in emailed links.
+    'frontend_url' => rtrim(env('FRONTEND_URL', 'https://paylidate.com'), '/'),
+
     // Comma separated list of staff addresses notified about withdrawals and reports.
     'admin_emails' => array_filter(explode(',', env('ADMIN_EMAILS', ''))),
 

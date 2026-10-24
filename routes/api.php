@@ -29,7 +29,7 @@ Route::group(['prefix' => 'api'], function () {
 
     Route::namespace('Api')->group(function () {
 
-        Route::post('login', 'AuthController@login');
+        Route::post('login', 'AuthController@login')->middleware('throttle:10,1');
         Route::post('signup', 'AuthController@signup');
         Route::post('signup/referral/{ref}', 'AuthController@refferal_signup');
 
@@ -48,9 +48,9 @@ Route::group(['prefix' => 'api'], function () {
         Route::post('fulfillment/{hash}', 'FulfilmentController@confirm_fufilment')->middleware('throttle:fulfilment');
 
         Route::group(['prefix' => 'password'], function () {
-            Route::post('create', 'PasswordResetController@create');
+            Route::post('create', 'PasswordResetController@create')->middleware('throttle:5,1');
             Route::get('find/{token}', 'PasswordResetController@find');
-            Route::post('reset', 'PasswordResetController@reset');
+            Route::post('reset', 'PasswordResetController@reset')->middleware('throttle:10,1');
         });
 
         Route::Post('get-rate', 'PaymentController@get_rate');

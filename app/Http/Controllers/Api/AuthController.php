@@ -2,17 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\AuthException;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Mail\RegistrationMail;
-use App\Rating;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Mail;
 use App\Services\AuthService;
-use App\User;
-use App\UserAccount;
-use Auth;
-use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 /**
  * @group  Authentication management
@@ -21,17 +14,12 @@ use Carbon\Carbon;
  */
 class AuthController extends Controller
 {
-    public function __construct()
-    {
-    }
-
-
     public function signup(Request $request, AuthService $auth)
     {
         $data = $request->validate([
             'name' => 'required|string|min:3',
             'email' => 'required|string|email|max:255',
-            'password' => 'required',
+            'password' => 'required|string|min:8',
             'password_confirmation' => 'required|same:password',
             'phone' => 'required|unique:users',
         ]);
@@ -47,7 +35,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => 'required|string|min:3',
             'email' => 'required|string|email|max:255',
-            'password' => 'required',
+            'password' => 'required|string|min:8',
             'password_confirmation' => 'required|same:password',
             'phone' => 'required|unique:users',
         ]);
@@ -114,222 +102,107 @@ class AuthController extends Controller
      * Get the authenticated User
      *
      * @authenticated
-     *
-     * @return [json] user object
      */
     public function user(Request $request)
     {
-        $user = User::where('id', Auth::user()->id)->first();
-        $account = UserAccount::where('user_id', Auth::user()->id)->first();
-
-        if ($account && $account->ref) {
-            $user_object = new User();
-            $virtual_account = $user_object->getVirtualAccount($account->ref);
-
-            if ($virtual_account['status'] == 'success') {
-                $account['account'] = $virtual_account['data'];
-            }
-        }
+        $user = $request->user()->load('account');
 
         return response()->json([
             'status' => 'success',
             'message' => 'user fetched',
             'data' => $user,
-            'account' => $account
+            'account' => $user->account,
         ]);
     }
 
-
-    public function verifyEmail($token)
+    public function verifyEmail(Request $request, AuthService $auth, $token)
     {
-
-
-        $user = User::where('email_token', $token)->first();
-        if (!$token || !$user) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'This verification token is invalid.'
-            ], 404);
-        }
-
-        $user->email_verified_at = date("Y-m-d H:i:s", strtotime('now'));
-        $user->email_token = null;
-        $user->save();
-
-        $tokenResult = $user->createToken('Personal Access Token');
-        $token = $tokenResult->token;
-
-        $token->save();
+        $user = $auth->verifyEmail($request->user(), $token);
 
         return response()->json([
             'status' => 'success',
-            'access_token' => $tokenResult->accessToken,
-            'message' => 'login successful',
+            'message' => 'Email verified',
             'data' => $user,
         ]);
     }
-    public function resendVerificationEmail($email)
+
+    public function resendVerificationEmail(Request $request, AuthService $auth, $email)
     {
-
-
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'No user with such email.'
-            ], 404);
+        if (strtolower($email) !== $request->user()->email) {
+            throw AuthException::forbidden();
         }
-        $emailToken = Str::random(8) . date('dmyHis');
-        $verifyEmailLink = "https://paylidate.com/verify/" . $emailToken;
 
-        $user->email_verified_at = null;
-        $user->email_token = $emailToken;
-        $user->save();
+        $auth->resendVerification($request->user());
 
-        try {
-            Mail::to($email)->send(new RegistrationMail($user, $verifyEmailLink));
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Email verification link sent',
-
-            ]);
-        } catch (\Exception $e) {
-            report($e);
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Email sending error'
-            ], 450);
-        }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Email verification link sent',
+        ]);
     }
-
 
     /**
      * User Activation
      *
-     * * @urlParam  token string required the token sent to the users email address
-     *
-     * @return [json] user object
+     * @urlParam  token string required the token sent to the users email address
      */
-    public function signupActivate($token)
+    public function signupActivate(AuthService $auth, $token)
     {
-        $user = User::where('activation_token', $token)->first();
-        if (!$user) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'This activation token is invalid.'
-            ], 404);
-        }
-
-        $user->active = true;
-        $user->activation_token = '';
-        $user->save();
-
         return response()->json([
             'status' => 'success',
             'message' => 'user activated',
-            'data' => $user
+            'data' => $auth->activate($token),
         ]);
     }
 
-
     /**
-     * Update user
+     * Update the authenticated user's profile
      *
-     *
-     * @bodyParam name string required the full name of the user
-     * @bodyParam email string required the email of the user , this value is unige
-     * @bodyParam phone string required the valide phone number of the user, this value is unige
-     *
-     *
-     * @return [string] message
+     * @bodyParam name string the full name of the user
+     * @bodyParam phone string the valid phone number of the user, this value is unique
      */
-    public function update(Request $request)
+    public function update(Request $request, AuthService $auth)
     {
-        $input = $request->all();
-        $id = Auth::user()->id;
-        $user = User::where('id', $id)->update($input);
-        $user = Auth::user();
+        $data = $request->validate([
+            'name' => 'sometimes|required|string|min:3',
+            'phone' => 'sometimes|required|string|unique:users,phone,' . $request->user()->id,
+            'avatar' => 'sometimes|nullable|string',
+        ]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'User updated',
-            'data' => $user,
+            'data' => $auth->updateProfile($request->user(), $data),
         ]);
     }
 
-    public function check_email($email)
+    public function check_email(AuthService $auth, $email)
     {
-        $user = User::where('email', $email)->first();
+        $exists = $auth->emailExists($email);
 
-        if ($user) {
-            return response()->json([
-                'status' => 'true',
-                'message' => 'User exist.',
-            ]);
-        } else {
-            return response()->json([
-                'status' => 'false',
-                'message' => 'User doesnot exist.'
-            ], 406);
-        }
+        return response()->json([
+            'status' => $exists ? 'true' : 'false',
+            'message' => $exists ? 'User exist.' : 'User doesnot exist.',
+        ], $exists ? 200 : 406);
     }
 
-    public function rate_user(Request $request, $id)
+    public function rate_user(Request $request, AuthService $auth, $id)
     {
-        try {
-            if ($id == auth()->user()->id) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Error user can rate self.'
-                ]);
-            }
+        $data = $request->validate(['rating' => 'required|integer|between:1,5']);
 
-            $rating = new Rating();
-            $rating->rated_user_id = $id;
-            $rating->user_id = auth()->user()->id;
-            $rating->rating = $request->rating;
-            $rating->save();
-            return response()->json([
-                'status' => 'Success',
-                'message' => 'User rated sousecfully'
-            ], 200);
-        } catch (\Throwable $th) {
-            report($th);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An Error Occured',
-            ], 500);
-        }
+        $auth->rate($request->user(), (int) $id, $data['rating']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User rated successfully',
+        ]);
     }
 
-    public function get_user_ratings($id)
+    public function get_user_ratings(AuthService $auth, $id)
     {
-        try {
-            $ratings = Rating::where('rated_user_id', $id)->get();
-            $totalScore = 0;
-            if (!$ratings) {
-                return response()->json([
-                    'message' => 'no ratings found for user',
-                    'data' => 0
-                ]);
-            }
-            foreach ($ratings as $rating) {
-                $totalScore += $rating->rating;
-            }
-            $averageScore = $totalScore / count($ratings);
-
-            return response()->json([
-                'status' => 'Success',
-                'message' => 'ratings found',
-                'data' => $averageScore
-            ]);
-        } catch (\Throwable $th) {
-            report($th);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An Error Occured',
-            ], 500);
-        }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'ratings found',
+            'data' => $auth->ratingsFor((int) $id),
+        ]);
     }
 }
