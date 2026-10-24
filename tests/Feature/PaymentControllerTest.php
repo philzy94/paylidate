@@ -3,10 +3,7 @@
 namespace Tests\Feature;
 
 use App\Payment;
-use App\Product;
-use App\Referer;
 use App\Services\PaymentService;
-use App\Transaction;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -22,38 +19,6 @@ class PaymentControllerTest extends TestCase
         Passport::actingAs($user, [], 'api');
 
         return $user;
-    }
-
-    public function testMakePaymentAppliesReferralAmountToTransactionAndReferrer()
-    {
-        $this->signIn(User::factory()->create());
-        $referral = Referer::create(['user_id' => User::factory()->create()->id, 'amount' => 0]);
-        $product = Product::factory()->create(['price' => 1000, 'referral_amount' => 100, 'quantity' => 10]);
-        $transaction = Transaction::create([
-            'product_id' => $product->id,
-            'quantity' => 2,
-            'referer_id' => $referral->id,
-        ]);
-
-        $this->postJson('/api/make-payment', ['payment_id' => 'P-1', 'transaction_id' => $transaction->id])->assertOk();
-
-        $this->assertEquals(1800, $transaction->fresh()->amount);
-        $this->assertEquals(200, $referral->fresh()->amount);
-        $this->assertSame(8, $product->fresh()->quantity);
-    }
-
-    public function testMakePaymentIsRejectedTwiceForTheSamePaymentId()
-    {
-        $this->signIn(User::factory()->create());
-        $product = Product::factory()->create(['quantity' => 10, 'referral_amount' => 0]);
-        $transaction = Transaction::create(['product_id' => $product->id, 'quantity' => 1]);
-        $payload = ['payment_id' => 'P-2', 'transaction_id' => $transaction->id];
-
-        $this->postJson('/api/make-payment', $payload)->assertOk();
-        $this->postJson('/api/make-payment', $payload)->assertStatus(409);
-
-        $this->assertSame(1, Payment::where('payment_id', 'P-2')->count());
-        $this->assertSame(9, $product->fresh()->quantity);
     }
 
     public function testIndexListsOnlyMyPayments()

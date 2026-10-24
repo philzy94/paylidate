@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\WalletHistory;
+use App\Services\WalletService;
 
 class WalletHistoryController extends Controller
 {
-    public function index()
+    public function index(WalletService $wallets)
     {
-        return $this->success(WalletHistory::where('user_id', auth('api')->user()->id)->orderByDesc('created_at')->get());
+        return $this->success($wallets->historyFor(auth('api')->user()));
     }
 }

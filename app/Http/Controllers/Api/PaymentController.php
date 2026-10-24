@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Payment;
 use App\Services\FlutterwaveService;
 use App\Services\PaymentService;
 
@@ -31,23 +30,8 @@ class PaymentController extends Controller
      */
     public function index()
     {
-        $Payment = Payment::where('user_id', auth('api')->user()->id)->get();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'success',
-            'data' => $Payment->load('product')
-        ]);
+        return $this->success($this->paymentService->listFor(auth('api')->user()));
     }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-    }
-
 
     /**
      * Create Payment
@@ -92,44 +76,27 @@ class PaymentController extends Controller
      */
     public function show($id)
     {
-        $payment = Payment::where('user_id', auth('api')->user()->id)->with('product')->findOrFail($id);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'success',
-            'data' => $payment
-        ]);
+        return $this->success($this->paymentService->findFor(auth('api')->user(), (int) $id));
     }
 
     public function update(Request $request, $id)
     {
-        $payment = Payment::where('user_id', auth('api')->user()->id)->findOrFail($id);
-        $payment->update($request->validate(['description' => 'nullable|string']));
+        $data = $request->validate(['description' => 'nullable|string']);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'success',
-            'data' => $payment
-        ]);
+        return $this->success($this->paymentService->describe(auth('api')->user(), (int) $id, $data['description'] ?? null));
     }
 
     /**
-     * Delete the specified product.
+     * Delete one of your own payments.
      *
      * @urlParam  id string required the id of the payment
-     * @return \Illuminate\Http\Response
      */
     public function destroy($id)
     {
-        $payment = Payment::where('user_id', auth('api')->user()->id)->findOrFail($id)->delete();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'success',
-            'data' => $payment
-        ]);
+        $this->paymentService->remove(auth('api')->user(), (int) $id);
+
+        return response()->json(['status' => 'success', 'message' => 'success']);
     }
-
-
 
     // Initiate card payment
     public function pay_with_card(Request $request)

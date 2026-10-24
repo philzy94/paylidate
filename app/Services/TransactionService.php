@@ -290,7 +290,7 @@ class TransactionService
     /**
      * The buyer is the product owner on "buy" listings and the initiator on "sell" listings.
      */
-    protected function isBuyer(Transaction $transaction, User $user): bool
+    public function isBuyer(Transaction $transaction, User $user): bool
     {
         $type = $transaction->product->transaction_type;
 

@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Exceptions\AppException;
 use App\Exceptions\PaymentVerificationException;
 use App\Payment;
-use App\Product;
 use App\Referer;
+use App\Transaction;
 use App\User;
 use Illuminate\Support\Facades\DB;
 
@@ -14,9 +14,12 @@ class PaymentService
 {
     protected FlutterwaveService $flutterwave;
 
-    public function __construct(FlutterwaveService $flutterwave)
+    protected TransactionService $transactions;
+
+    public function __construct(FlutterwaveService $flutterwave, TransactionService $transactions)
     {
         $this->flutterwave = $flutterwave;
+        $this->transactions = $transactions;
     }
 
     /**
@@ -44,31 +47,47 @@ class PaymentService
     }
 
     /**
-     * Record a verified payment, reduce the product stock and settle the
+     * Record a payment after Flutterwave confirms it, reduce the product stock and settle the
      * seller/referrer amounts on the related transaction.
+     *
+     * The caller must be the buyer, the payment must be successful and cover the price, and a
+     * payment id can only ever be recorded once.
+     *
+     * @throws PaymentVerificationException
      */
     public function recordVerifiedPayment(int $userId, array $attributes): Payment
     {
-        if ($this->exists($attributes['payment_id'])) {
-            throw PaymentVerificationException::alreadyVerified();
-        }
+        $buyer = User::findOrFail($userId);
+        $reference = $attributes['payment_ref'] ?? $attributes['payment_id'];
 
-        return DB::transaction(function () use ($userId, $attributes) {
+        return DB::transaction(function () use ($buyer, $attributes, $reference) {
+            // Serialise payments for one transaction so a double submit cannot record twice.
+            $transaction = Transaction::with('product')->lockForUpdate()->find($attributes['transaction_id']);
+
+            if (! $transaction || ! $transaction->product) {
+                throw PaymentVerificationException::failed();
+            }
+
+            if (! $this->transactions->isBuyer($transaction, $buyer)) {
+                throw PaymentVerificationException::notBuyer();
+            }
+
+            if ($this->exists($attributes['payment_id']) || Payment::where('transaction_id', $transaction->id)->where('verified', true)->exists()) {
+                throw PaymentVerificationException::alreadyVerified();
+            }
+
+            $product = $transaction->product;
+            $expected = $product->price * $transaction->quantity;
+            $this->assertPaid($reference, $expected);
+
             $payment = Payment::create([
-                'user_id' => $userId,
+                'user_id' => $buyer->id,
                 'payment_ref' => $attributes['payment_ref'] ?? null,
                 'payment_id' => $attributes['payment_id'],
-                'transaction_id' => $attributes['transaction_id'],
+                'transaction_id' => $transaction->id,
                 'verified' => true,
                 'description' => $attributes['description'] ?? null,
             ]);
-
-            $transaction = $payment->transaction;
-            $product = Product::find($transaction->product_id);
-
-            if (! $product) {
-                throw PaymentVerificationException::failed();
-            }
 
             $split = self::splitAmount($product->price, $product->referral_amount, (int) $transaction->quantity);
 
@@ -80,6 +99,24 @@ class PaymentService
 
             return $payment;
         });
+    }
+
+    /**
+     * Ask Flutterwave whether $reference was paid successfully, in NGN, for at least $expected.
+     *
+     * @throws PaymentVerificationException
+     */
+    protected function assertPaid(string $reference, $expected): void
+    {
+        $data = $this->flutterwave->verify_payment($reference)['data'] ?? [];
+
+        $paid = ($data['status'] ?? null) === 'successful'
+            && ($data['currency'] ?? 'NGN') === 'NGN'
+            && (float) ($data['amount'] ?? 0) + 0.005 >= (float) $expected;
+
+        if (! $paid) {
+            throw PaymentVerificationException::failed();
+        }
     }
 
     /**
@@ -145,5 +182,33 @@ class PaymentService
         }
 
         return $data;
+    }
+
+    public function listFor(User $user)
+    {
+        return Payment::where('user_id', $user->id)->with('product')->get();
+    }
+
+    /**
+     * One of the user's own payments.
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function findFor(User $user, int $id): Payment
+    {
+        return Payment::where('user_id', $user->id)->with('product')->findOrFail($id);
+    }
+
+    public function describe(User $user, int $id, ?string $description): Payment
+    {
+        $payment = $this->findFor($user, $id);
+        $payment->update(['description' => $description]);
+
+        return $payment;
+    }
+
+    public function remove(User $user, int $id): void
+    {
+        $this->findFor($user, $id)->delete();
     }
 }

@@ -316,6 +316,11 @@ class WalletService
     // exceptions instead of returning status arrays.
     // ------------------------------------------------------------------
 
+    public function historyFor(User $user)
+    {
+        return WalletHistory::where('user_id', $user->id)->orderByDesc('created_at')->get();
+    }
+
     public function walletFor(User $user): ?Wallet
     {
         return Wallet::where('user_id', $user->id)->with('wallet_history')->first();

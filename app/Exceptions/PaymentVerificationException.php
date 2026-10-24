@@ -17,4 +17,9 @@ class PaymentVerificationException extends AppException
             'payment_verification_failed'
         );
     }
+
+    public static function notBuyer(): self
+    {
+        return new self('You are not the buyer on this transaction', 403, 'payment_not_buyer');
+    }
 }
