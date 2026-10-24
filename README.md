@@ -58,10 +58,12 @@ composer test   # runs vendor/bin/phpunit
 | --- | --- |
 | `routes/api.php` | Route definitions (first-party API and the third-party API) |
 | `app/Http/Controllers/Api` | Thin HTTP layer: validate input, call services, shape the response |
-| `app/Http/Controllers/ThirdPartyApi` | Third-party (API key) entry points; most extend the `Api` controllers |
 | `app/Services` | Business logic (`AuthService`, `TransactionService`, `PaymentService`, `WalletService`, `FlutterwaveService`, ...) |
 | `app/Exceptions` | Typed domain errors rendered as JSON (`AppException` and subclasses) |
 | `app/*.php` | Eloquent models |
+
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (layers, transaction lifecycle, security model)
+and [docs/API.md](docs/API.md) (endpoint reference).
 
 New business logic belongs in a service, not in a controller
 (see `TransactionController` + `TransactionService` for the pattern).
@@ -69,16 +71,24 @@ New business logic belongs in a service, not in a controller
 ## Development
 
 ```bash
-composer lint   # PSR-12 via phpcs (whole app, routes, tests and config)
-composer test   # PHPUnit (see CONTRIBUTING.md for the workflow)
+composer lint      # PSR-12 via phpcs (whole app, routes, tests and config)
+composer analyse   # PHPStan level 8 via Larastan
+composer test      # PHPUnit (see CONTRIBUTING.md for the workflow)
+composer check     # lint + analyse + test, what CI runs
+composer coverage  # tests with a coverage report (needs pcov or Xdebug)
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, a dependency audit, the tests and a Docker build on
+CI (`.github/workflows/ci.yml`) runs lint, static analysis, a dependency audit, the tests with a minimum-coverage gate (90%), the tests and a Docker build on
 every push and pull request. Pushing a `v*` tag runs `release.yml`, which re-runs the checks,
 publishes the image to GitHub Container Registry and creates a GitHub release. Dependabot keeps dependencies and workflows
 up to date.
 
 ## Security
 
-Never commit secrets. Keys live in `.env` only. Report vulnerabilities
-privately to the maintainers.
+Never commit secrets. Keys live in `.env` only. See [SECURITY.md](SECURITY.md) for how to report
+a vulnerability privately.
+
+## License and conduct
+
+Released under the [MIT License](LICENSE). Participation is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md); see [CONTRIBUTING.md](CONTRIBUTING.md) to get involved.
