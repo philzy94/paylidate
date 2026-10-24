@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\PayoutService;
+use App\Services\PayoutTransferService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -37,11 +38,11 @@ class WithdrawalController extends Controller
     /**
      * Staff only (see the `admin` middleware on the route).
      */
-    public function transfer_to_bank(Request $request): JsonResponse
+    public function transfer_to_bank(Request $request, PayoutTransferService $transfers): JsonResponse
     {
         $data = $request->validate(['id' => 'required|numeric']);
 
-        $result = $this->payouts->transferWithdrawal((int) $data['id']);
+        $result = $transfers->transferWithdrawal((int) $data['id']);
 
         return response()->json([
             'status' => 'success',

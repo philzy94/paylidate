@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Bank;
 use App\Exceptions\TransactionException;
-use App\Mail\CreateTransactionMail;
-use App\Mail\ReportTransaction;
 use App\Product;
 use App\Referer;
 use App\Refund;
@@ -15,7 +13,6 @@ use App\Withdrawal;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -33,11 +30,11 @@ class TransactionService
     /** Hours a buyer's report stays open before the transaction is marked expired. */
     public const REPORT_WINDOW_HOURS = 24;
 
-    protected FulfilmentService $fulfilmentService;
+    protected TransactionNotifier $notifier;
 
-    public function __construct(FulfilmentService $fulfilmentService)
+    public function __construct(TransactionNotifier $notifier)
     {
-        $this->fulfilmentService = $fulfilmentService;
+        $this->notifier = $notifier;
     }
 
     /**
@@ -90,19 +87,12 @@ class TransactionService
         }
 
         return DB::transaction(function () use ($user, $data, $referralToken) {
-            $referralId = null;
-            $referrer = $referralToken ? User::where('referral_token', $referralToken)->first() : null;
-
-            if ($referrer) {
-                $referralId = Referer::create(['user_id' => $referrer->id, 'amount' => 0.00])->id;
-            }
-
             return Transaction::create([
                 'user_id' => $user->id,
                 'product_id' => $data['product_id'],
                 'quantity' => $data['quantity'],
                 'transaction_ref' => 'PD_' . Str::random(8) . date('dmyHis'),
-                'referer_id' => $referralId,
+                'referer_id' => $this->openReferral($referralToken),
                 'description' => $data['description'] ?? null,
                 'accept_transaction' => true,
             ])->load('product', 'referral');
@@ -110,28 +100,21 @@ class TransactionService
     }
 
     /**
+     * Start a referral record for the owner of $referralToken, if there is one.
+     */
+    protected function openReferral(?string $referralToken): ?int
+    {
+        $referrer = $referralToken ? User::where('referral_token', $referralToken)->first() : null;
+
+        return $referrer ? Referer::create(['user_id' => $referrer->id, 'amount' => 0.00])->id : null;
+    }
+
+    /**
      * Email both parties about a new transaction and, optionally, start fulfilment.
      */
     public function notifyCreated(Transaction $transaction, User $buyer, bool $initiateFulfilment = false): void
     {
-        $seller = $this->productOf($transaction)->user ?? throw TransactionException::notFound();
-        $details = $this->emailDetails($transaction);
-
-        if ($initiateFulfilment) {
-            $this->fulfilmentService->initiate_fufilment(
-                $seller->email,
-                (string) $seller->name,
-                $buyer->email,
-                (string) $buyer->name,
-                $buyer->id,
-                $transaction->id,
-                (string) $transaction->transaction_ref,
-                $details
-            );
-        }
-
-        Mail::to($buyer->email)->send(new CreateTransactionMail($buyer, $details));
-        Mail::to($seller->email)->send(new CreateTransactionMail($seller, $details));
+        $this->notifier->created($transaction, $buyer, $initiateFulfilment);
     }
 
     /**
@@ -227,11 +210,7 @@ class TransactionService
             'transaction_reported_at' => Carbon::now(),
         ]);
 
-        $seller = User::where('email', $sellerEmail)->first();
-        $reference = (string) $transaction->transaction_ref;
-
-        Mail::to($sellerEmail)->send(new ReportTransaction(optional($seller)->name, $reference, 'report', $report));
-        $this->notifyStaff(new ReportTransaction('Admin', $reference, 'report', $report));
+        $this->notifier->reported($transaction, $sellerEmail, $report);
 
         return $transaction;
     }
@@ -251,11 +230,7 @@ class TransactionService
 
         $transaction->update(['status' => self::STATUS_CANCELLED]);
 
-        $seller = User::where('email', $sellerEmail)->first();
-        $reference = (string) $transaction->transaction_ref;
-
-        Mail::to($sellerEmail)->send(new ReportTransaction(optional($seller)->name, $reference, 'resolve'));
-        $this->notifyStaff(new ReportTransaction('Admin', $reference, 'resolve'));
+        $this->notifier->resolved($transaction, $sellerEmail);
 
         return $transaction;
     }
@@ -333,33 +308,11 @@ class TransactionService
             && Carbon::parse($transaction->transaction_reported_at)->addHours(self::REPORT_WINDOW_HOURS)->isPast();
     }
 
-    protected function notifyStaff(ReportTransaction $mail): void
-    {
-        $recipients = config('app.admin_emails');
-
-        if (! empty($recipients)) {
-            Mail::to($recipients)->send($mail);
-        }
-    }
-
     /**
      * @return array<string, mixed>
      */
     public function emailDetails(Transaction $transaction): array
     {
-        $product = $this->productOf($transaction);
-
-        return [
-            'id' => $transaction->id,
-            'referral' => $transaction->referral,
-            'transaction_ref' => $transaction->transaction_ref,
-            'product_id' => $transaction->product_id,
-            'product_name' => $product->name,
-            'product_number' => $product->product_number,
-            'type' => $product->type,
-            'total_quantity' => $transaction->quantity,
-            'total_price' => $product->price * $transaction->quantity,
-            'description' => $transaction->description ?: 'No description',
-        ];
+        return $this->notifier->details($transaction);
     }
 }

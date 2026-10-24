@@ -69,13 +69,7 @@ class InstantPayService
             throw InstantPayException::paymentUsed();
         }
 
-        $verification = $this->flutterwave->verify_payment($paymentRef);
-        $payment = $verification['data'] ?? [];
-
-        if (($payment['status'] ?? null) !== 'successful' || ($payment['currency'] ?? 'NGN') !== 'NGN') {
-            throw InstantPayException::paymentUnverified();
-        }
-
+        $payment = $this->verifiedPayment($paymentRef);
         $pin = (string) random_int(100000, 999999);
         $linkToken = 'PD_IP_' . Str::random(4) . date('dmyHis');
         $trackingId = random_int(100000, 999999) . date('dmyHis');
@@ -95,16 +89,38 @@ class InstantPayService
             'tracking_id' => $trackingId,
         ]);
 
-        $this->sms->sendToNigerianNumber($receiverNumber, sprintf(
+        $this->notifyReceiver($sender, $receiverNumber, $payment['amount'], $linkToken, $pin, $trackingId);
+
+        return $transfer;
+    }
+
+    /**
+     * The successful NGN payment Flutterwave holds for $paymentRef.
+     *
+     * @return array<string, mixed>
+     */
+    protected function verifiedPayment(string $paymentRef): array
+    {
+        $verification = $this->flutterwave->verify_payment($paymentRef);
+        $payment = $verification['data'] ?? [];
+
+        if (($payment['status'] ?? null) !== 'successful' || ($payment['currency'] ?? 'NGN') !== 'NGN') {
+            throw InstantPayException::paymentUnverified();
+        }
+
+        return $payment;
+    }
+
+    protected function notifyReceiver(User $sender, string $number, mixed $amount, string $linkToken, string $pin, string $trackingId): void
+    {
+        $this->sms->sendToNigerianNumber($number, sprintf(
             'Paylidate payment of NGN%s from %s. Visit https://paylidate.com/recieve-instant-funds/%s to withdraw. Your withdrawal pin is %s. Tracking id %s',
-            $payment['amount'],
+            $amount,
             $sender->name,
             $linkToken,
             $pin,
             $trackingId
         ));
-
-        return $transfer;
     }
 
     /**
@@ -144,23 +160,7 @@ class InstantPayService
     public function withdraw(User $user, int $id): Instandpay
     {
         return DB::transaction(function () use ($user, $id) {
-            $transfer = Instandpay::lockForUpdate()->find($id);
-
-            if (! $transfer) {
-                throw InstantPayException::notFound();
-            }
-
-            if ($transfer->receiver_id !== $user->id) {
-                throw InstantPayException::forbidden();
-            }
-
-            if ($transfer->status) {
-                throw InstantPayException::alreadyWithdrawn();
-            }
-
-            if (! $transfer->bank_code || ! $transfer->account_number) {
-                throw InstantPayException::notReady();
-            }
+            $transfer = $this->withdrawable($user, $id);
 
             // Mark as paid first (inside the lock); the transaction rolls back if the transfer fails.
             $transfer->update(['status' => true]);
@@ -178,6 +178,32 @@ class InstantPayService
 
             return $transfer;
         });
+    }
+
+    /**
+     * The locked transfer, once it is known to be the receiver's, unpaid and ready to pay out.
+     */
+    protected function withdrawable(User $user, int $id): Instandpay
+    {
+        $transfer = Instandpay::lockForUpdate()->find($id);
+
+        if (! $transfer) {
+            throw InstantPayException::notFound();
+        }
+
+        if ($transfer->receiver_id !== $user->id) {
+            throw InstantPayException::forbidden();
+        }
+
+        if ($transfer->status) {
+            throw InstantPayException::alreadyWithdrawn();
+        }
+
+        if (! $transfer->bank_code || ! $transfer->account_number) {
+            throw InstantPayException::notReady();
+        }
+
+        return $transfer;
     }
 
     protected function receiver(string $phone): User

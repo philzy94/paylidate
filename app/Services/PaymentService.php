@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\AppException;
 use App\Exceptions\PaymentVerificationException;
 use App\Payment;
+use App\Product;
 use App\Referer;
 use App\Transaction;
 use App\User;
@@ -69,29 +70,14 @@ class PaymentService
         $reference = (string) ($attributes['payment_ref'] ?? $attributes['payment_id']);
 
         return DB::transaction(function () use ($buyer, $attributes, $reference) {
-            // Serialise payments for one transaction so a double submit cannot record twice.
-            $transaction = Transaction::with('product')->lockForUpdate()->find($attributes['transaction_id']);
-
-            if (! $transaction || ! $transaction->product) {
-                throw PaymentVerificationException::failed();
-            }
-
-            if (! $this->transactions->isBuyer($transaction, $buyer)) {
-                throw PaymentVerificationException::notBuyer();
-            }
-
-            if ($this->exists($attributes['payment_id']) || Payment::where('transaction_id', $transaction->id)->where('verified', true)->exists()) {
-                throw PaymentVerificationException::alreadyVerified();
-            }
-
+            $transaction = $this->payableTransaction($buyer, $attributes);
             $product = $transaction->product;
 
-            if ($product->price === null) {
+            if ($product === null || $product->price === null) {
                 throw PaymentVerificationException::failed();
             }
 
-            $expected = $product->price * $transaction->quantity;
-            $this->assertPaid($reference, $expected);
+            $this->assertPaid($reference, $product->price * $transaction->quantity);
 
             $payment = Payment::create([
                 'user_id' => $buyer->id,
@@ -102,16 +88,51 @@ class PaymentService
                 'description' => $attributes['description'] ?? null,
             ]);
 
-            $split = self::splitAmount($product->price, $product->referral_amount ?? 0, (int) $transaction->quantity);
-
-            $product->update(['quantity' => $product->quantity - $transaction->quantity]);
-            $transaction->update(['amount' => $split['amount']]);
-
-            Referer::where('id', $transaction->referer_id)
-                ->update(['amount' => $split['referral_amount']]);
+            $this->applySplit($transaction, $product, $product->price);
 
             return $payment;
         });
+    }
+
+    /**
+     * The row-locked transaction $buyer is allowed to pay for, if it has not been paid yet.
+     *
+     * @param array{transaction_id: int|string, payment_id: int|string} $attributes
+     *
+     * @throws PaymentVerificationException
+     */
+    protected function payableTransaction(User $buyer, array $attributes): Transaction
+    {
+        // Serialise payments for one transaction so a double submit cannot record twice.
+        $transaction = Transaction::with('product')->lockForUpdate()->find($attributes['transaction_id']);
+
+        if (! $transaction || ! $transaction->product) {
+            throw PaymentVerificationException::failed();
+        }
+
+        if (! $this->transactions->isBuyer($transaction, $buyer)) {
+            throw PaymentVerificationException::notBuyer();
+        }
+
+        if ($this->exists($attributes['payment_id']) || Payment::where('transaction_id', $transaction->id)->where('verified', true)->exists()) {
+            throw PaymentVerificationException::alreadyVerified();
+        }
+
+        return $transaction;
+    }
+
+    /**
+     * Reduce stock and store the seller and referral amounts once a payment is recorded.
+     */
+    protected function applySplit(Transaction $transaction, Product $product, int|float $price): void
+    {
+        $split = self::splitAmount($price, $product->referral_amount ?? 0, (int) $transaction->quantity);
+
+        $product->update(['quantity' => $product->quantity - $transaction->quantity]);
+        $transaction->update(['amount' => $split['amount']]);
+
+        Referer::where('id', $transaction->referer_id)
+            ->update(['amount' => $split['referral_amount']]);
     }
 
     /**
@@ -185,6 +206,18 @@ class PaymentService
             return $data;
         }
 
+        return $this->continueAuthorisation($payload, $data);
+    }
+
+    /**
+     * Handle the auth step Flutterwave suggested when the charge did not return an auth URL.
+     *
+     * @param array<string, mixed> $payload
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    protected function continueAuthorisation(array $payload, array $data): array
+    {
         $suggestedAuth = $data['suggested_auth'] ?? null;
 
         if ($suggestedAuth == 'PIN') {

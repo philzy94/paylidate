@@ -61,13 +61,7 @@ class ProductService
      */
     public function create(User $user, array $data): Product
     {
-        $referral = $data['referral_amount'] ?? 0;
-
-        if ($data['transaction_type'] === 'buy') {
-            $referral = 0;
-        } elseif (! empty($referral) && $referral >= $data['price']) {
-            throw ProductException::referralTooHigh();
-        }
+        $referral = $this->referralFor($data);
 
         [$product, $transaction, $seller] = DB::transaction(function () use ($user, $data, $referral) {
             $product = Product::create(array_merge(
@@ -85,27 +79,58 @@ class ProductService
             }
 
             $seller = $this->sellerFor($data['seller_email']);
-            $transaction = Transaction::create([
-                'product_id' => $product->id,
-                'user_id' => $seller->id,
-                'quantity' => $product->quantity,
-                'transaction_ref' => 'PD_' . Str::random(8) . date('dmyHis'),
-            ]);
 
-            return [$product, $transaction->load('product'), $seller];
+            return [$product, $this->openBuyTransaction($product, $seller), $seller];
         });
 
         if ($transaction && $seller) {
-            Mail::to($seller->email)->send(new SellerAcceptTransactionMail(
-                $seller->email,
-                $user->email,
-                $this->transactions->emailDetails($transaction)
-            ));
+            $this->inviteSeller($user, $seller, $transaction);
         }
 
         Mail::to($user->email)->send(new CreateProductMail($user, $product));
 
         return $product;
+    }
+
+    /**
+     * The referral amount a new listing may carry: none for "buy" listings, and always below the price.
+     *
+     * @param array<string, mixed> $data
+     */
+    protected function referralFor(array $data): mixed
+    {
+        if ($data['transaction_type'] === 'buy') {
+            return 0;
+        }
+
+        $referral = $data['referral_amount'] ?? 0;
+
+        if (! empty($referral) && $referral >= $data['price']) {
+            throw ProductException::referralTooHigh();
+        }
+
+        return $referral;
+    }
+
+    protected function openBuyTransaction(Product $product, User $seller): Transaction
+    {
+        $transaction = Transaction::create([
+            'product_id' => $product->id,
+            'user_id' => $seller->id,
+            'quantity' => $product->quantity,
+            'transaction_ref' => 'PD_' . Str::random(8) . date('dmyHis'),
+        ]);
+
+        return $transaction->load('product');
+    }
+
+    protected function inviteSeller(User $buyer, User $seller, Transaction $transaction): void
+    {
+        Mail::to($seller->email)->send(new SellerAcceptTransactionMail(
+            $seller->email,
+            $buyer->email,
+            $this->transactions->emailDetails($transaction)
+        ));
     }
 
     /** @param array<string, mixed> $data */
