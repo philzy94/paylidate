@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class WalletsettlementId extends Model
@@ -10,8 +11,9 @@ class WalletsettlementId extends Model
         'wallet_id', 'settlementId'
     ];
 
-    public function wallet()
+    /** @return BelongsTo<Wallet, $this> */
+    public function wallet(): BelongsTo
     {
-        return $this->belongsTo('App\Wallet');
+        return $this->belongsTo(Wallet::class);
     }
 }

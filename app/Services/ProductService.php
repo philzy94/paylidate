@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Collection;
 
 class ProductService
 {
@@ -28,11 +29,13 @@ class ProductService
         $this->transactions = $transactions;
     }
 
-    public function listFor(User $user)
+    /** @return Collection<int, Product> */
+    public function listFor(User $user): Collection
     {
         return Product::where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
     }
 
+    /** @param list<string> $with */
     public function findBySlug(string $slug, array $with = []): Product
     {
         $product = Product::where('slug', $slug)->with($with)->first();
@@ -44,7 +47,8 @@ class ProductService
         return $product;
     }
 
-    public function catalog(int $userId)
+    /** @return Collection<int, Product> */
+    public function catalog(int $userId): Collection
     {
         return Product::where('user_id', $userId)->where('product_status', true)->get();
     }
@@ -52,6 +56,8 @@ class ProductService
     /**
      * Create a listing. "buy" listings also open a transaction with the invited seller,
      * creating a placeholder account for them if they are not registered yet.
+     *
+     * @param array<string, mixed> $data
      */
     public function create(User $user, array $data): Product
     {
@@ -89,7 +95,7 @@ class ProductService
             return [$product, $transaction->load('product'), $seller];
         });
 
-        if ($transaction) {
+        if ($transaction && $seller) {
             Mail::to($seller->email)->send(new SellerAcceptTransactionMail(
                 $seller->email,
                 $user->email,
@@ -102,6 +108,7 @@ class ProductService
         return $product;
     }
 
+    /** @param array<string, mixed> $data */
     public function update(User $user, int $id, array $data): Product
     {
         $product = $this->owned($user, $id);

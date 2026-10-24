@@ -2,6 +2,8 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Dispute extends Model
@@ -11,22 +13,26 @@ class Dispute extends Model
         'dispute','dispute_solved'
      ];
 
-    public function transaction()
+    /** @return BelongsTo<Transaction, $this> */
+    public function transaction(): BelongsTo
     {
-        return $this->belongsTo('App\Transaction');
+        return $this->belongsTo(Transaction::class);
     }
-    public function dispute_chat()
+    /** @return HasMany<DisputeChat, $this> */
+    public function dispute_chat(): HasMany
     {
-        return $this->hasMany('App\DisputeChat');
-    }
-
-    public function user()
-    {
-        return $this->belongsTo('App\User');
+        return $this->hasMany(DisputeChat::class);
     }
 
-    public function product()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\Product');
+        return $this->belongsTo(User::class);
+    }
+
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 }

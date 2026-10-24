@@ -6,6 +6,8 @@ use App\Exceptions\AuthException;
 use App\Http\Controllers\Controller;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
+use Laravel\Passport\Token;
+use Illuminate\Http\JsonResponse;
 
 /**
  * @group  Authentication management
@@ -14,7 +16,7 @@ use Illuminate\Http\Request;
  */
 class AuthController extends Controller
 {
-    public function signup(Request $request, AuthService $auth)
+    public function signup(Request $request, AuthService $auth): JsonResponse
     {
         $data = $request->validate([
             'name' => 'required|string|min:3',
@@ -30,7 +32,7 @@ class AuthController extends Controller
     }
 
 
-    public function refferal_signup(Request $request, AuthService $auth, $ref)
+    public function refferal_signup(Request $request, AuthService $auth, string $ref): JsonResponse
     {
         $data = $request->validate([
             'name' => 'required|string|min:3',
@@ -43,7 +45,10 @@ class AuthController extends Controller
         return $this->registered($auth->register($data, $ref));
     }
 
-    protected function registered(array $result)
+    /**
+     * @param array{token: string, user: \App\User} $result
+     */
+    protected function registered(array $result): JsonResponse
     {
         return response()->json([
             'status' => 'success',
@@ -59,12 +64,8 @@ class AuthController extends Controller
      * @bodyParam email string required the email of the user
      * @bodyParam password string required the users prefered password
      * @bodyParam  remember_me boolean
-     *
-     * @return [string] access_token
-     * @return [string] token_type
-     * @return [string] expires_at
      */
-    public function login(Request $request, AuthService $auth)
+    public function login(Request $request, AuthService $auth): JsonResponse
     {
         $request->validate([
             'email' => 'required|string|email',
@@ -85,12 +86,15 @@ class AuthController extends Controller
      * Logout user (Revoke the token)
      *
      * @authenticated
-     *
-     * @return [string] message
      */
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
-        $request->user()->token()->revoke();
+        $token = $this->authUser()->token();
+
+        if ($token instanceof Token) {
+            $token->revoke();
+        }
+
 
         return response()->json([
             'status' => 'success',
@@ -103,9 +107,9 @@ class AuthController extends Controller
      *
      * @authenticated
      */
-    public function user(Request $request)
+    public function user(Request $request): JsonResponse
     {
-        $user = $request->user()->load('account');
+        $user = $this->authUser()->load('account');
 
         return response()->json([
             'status' => 'success',
@@ -115,9 +119,9 @@ class AuthController extends Controller
         ]);
     }
 
-    public function verifyEmail(Request $request, AuthService $auth, $token)
+    public function verifyEmail(Request $request, AuthService $auth, string $token): JsonResponse
     {
-        $user = $auth->verifyEmail($request->user(), $token);
+        $user = $auth->verifyEmail($this->authUser(), $token);
 
         return response()->json([
             'status' => 'success',
@@ -126,13 +130,13 @@ class AuthController extends Controller
         ]);
     }
 
-    public function resendVerificationEmail(Request $request, AuthService $auth, $email)
+    public function resendVerificationEmail(Request $request, AuthService $auth, string $email): JsonResponse
     {
-        if (strtolower($email) !== $request->user()->email) {
+        if (strtolower($email) !== $this->authUser()->email) {
             throw AuthException::forbidden();
         }
 
-        $auth->resendVerification($request->user());
+        $auth->resendVerification($this->authUser());
 
         return response()->json([
             'status' => 'success',
@@ -145,7 +149,7 @@ class AuthController extends Controller
      *
      * @urlParam  token string required the token sent to the users email address
      */
-    public function signupActivate(AuthService $auth, $token)
+    public function signupActivate(AuthService $auth, string $token): JsonResponse
     {
         return response()->json([
             'status' => 'success',
@@ -160,22 +164,22 @@ class AuthController extends Controller
      * @bodyParam name string the full name of the user
      * @bodyParam phone string the valid phone number of the user, this value is unique
      */
-    public function update(Request $request, AuthService $auth)
+    public function update(Request $request, AuthService $auth): JsonResponse
     {
         $data = $request->validate([
             'name' => 'sometimes|required|string|min:3',
-            'phone' => 'sometimes|required|string|unique:users,phone,' . $request->user()->id,
+            'phone' => 'sometimes|required|string|unique:users,phone,' . $this->authUser()->id,
             'avatar' => 'sometimes|nullable|string',
         ]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'User updated',
-            'data' => $auth->updateProfile($request->user(), $data),
+            'data' => $auth->updateProfile($this->authUser(), $data),
         ]);
     }
 
-    public function check_email(AuthService $auth, $email)
+    public function check_email(AuthService $auth, string $email): JsonResponse
     {
         $exists = $auth->emailExists($email);
 
@@ -185,11 +189,11 @@ class AuthController extends Controller
         ], $exists ? 200 : 406);
     }
 
-    public function rate_user(Request $request, AuthService $auth, $id)
+    public function rate_user(Request $request, AuthService $auth, string $id): JsonResponse
     {
         $data = $request->validate(['rating' => 'required|integer|between:1,5']);
 
-        $auth->rate($request->user(), (int) $id, $data['rating']);
+        $auth->rate($this->authUser(), (int) $id, $data['rating']);
 
         return response()->json([
             'status' => 'success',
@@ -197,7 +201,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function get_user_ratings(AuthService $auth, $id)
+    public function get_user_ratings(AuthService $auth, string $id): JsonResponse
     {
         return response()->json([
             'status' => 'success',

@@ -12,8 +12,19 @@ use Illuminate\Support\Facades\Mail;
 
 class FulfilmentService
 {
-    public function initiate_fufilment($seller_mail, $seller_name, $buyer_mail, $buyer_name, $buyer_id, $t_id, $t_ref, $transaction_details)
-    {
+    /**
+     * @param array<string, mixed> $transaction_details
+     */
+    public function initiate_fufilment(
+        string $seller_mail,
+        string $seller_name,
+        string $buyer_mail,
+        string $buyer_name,
+        int $buyer_id,
+        int $t_id,
+        string $t_ref,
+        array $transaction_details
+    ): bool {
         try {
             $code = $this->generateCode();
 
@@ -25,7 +36,7 @@ class FulfilmentService
                 'status' => Fulfillment::PENDING
             ]);
 
-            Mail::to($buyer_mail)->send(new FulfilmentMail($buyer_name, $code, $transaction_details));
+            Mail::to($buyer_mail)->send(new FulfilmentMail($buyer_name, (string) $code, $transaction_details));
             Mail::to($seller_mail)->send(new SellerFulfilmentMail($seller_name, $this->url($buyer_id, $t_id), $transaction_details));
 
             return true;
@@ -44,7 +55,7 @@ class FulfilmentService
         return $number;
     }
 
-    protected function url($buyer_id, $trx_id): string
+    protected function url(int $buyer_id, int $trx_id): string
     {
         return 'paylidate.com/fulfillment/' . base64_encode($buyer_id . ':' . $trx_id);
     }
@@ -70,6 +81,8 @@ class FulfilmentService
 
     /**
      * What the seller sees when opening the fulfilment link.
+     *
+     * @return array<string, mixed>
      */
     public function details(string $hash): array
     {
@@ -78,11 +91,11 @@ class FulfilmentService
         $transaction = Transaction::with('product.user')->find($transactionId);
         $fulfilment = Fulfillment::where('transaction_id', $transactionId)->where('user_id', $buyerId)->first();
 
-        if (! $transaction || ! $fulfilment) {
+        $product = $transaction?->product;
+
+        if (! $transaction || ! $fulfilment || ! $product) {
             throw new AppException('This fulfilment link is invalid', 404, 'fulfilment_link_invalid');
         }
-
-        $product = $transaction->product;
 
         return [
             'product_number' => $product->product_number,
@@ -99,7 +112,7 @@ class FulfilmentService
      *
      * @throws AppException
      */
-    public function confirm(string $hash, $code): void
+    public function confirm(string $hash, string|int $code): void
     {
         [$buyerId, $transactionId] = $this->parseHash($hash);
 

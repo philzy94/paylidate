@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\BankService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class BankController extends Controller
 {
-    protected $banks;
+    protected BankService $banks;
 
     public function __construct(BankService $banks)
     {
@@ -16,12 +17,12 @@ class BankController extends Controller
     }
 
     // the caller's own bank account
-    public function index()
+    public function index(): JsonResponse
     {
-        return $this->success($this->banks->forUser(auth('api')->user()));
+        return $this->success($this->banks->forUser($this->authUser()));
     }
 
-    public function verify_account_number(Request $request)
+    public function verify_account_number(Request $request): JsonResponse
     {
         $data = $request->validate([
             'account_number' => 'required|digits:10',
@@ -31,24 +32,27 @@ class BankController extends Controller
         return $this->success($this->banks->resolve($data['account_number'], $data['bank_code']));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        return $this->success($this->banks->save(auth('api')->user(), $this->validated($request)));
+        return $this->success($this->banks->save($this->authUser(), $this->validated($request)));
     }
 
     // {id} is ignored: users can only ever see their own bank account
-    public function show($id)
+    public function show(string $id): JsonResponse
     {
-        return $this->success($this->banks->find(auth('api')->user()));
+        return $this->success($this->banks->find($this->authUser()));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id): JsonResponse
     {
-        $this->banks->find(auth('api')->user());
+        $this->banks->find($this->authUser());
 
-        return $this->success($this->banks->save(auth('api')->user(), $this->validated($request)), 'Update successful');
+        return $this->success($this->banks->save($this->authUser(), $this->validated($request)), 'Update successful');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function validated(Request $request): array
     {
         return $request->validate([

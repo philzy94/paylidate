@@ -5,22 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\CardService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CardController extends Controller
 {
-    protected $cards;
+    protected CardService $cards;
 
     public function __construct(CardService $cards)
     {
         $this->cards = $cards;
     }
 
-    public function index()
+    public function index(): JsonResponse
     {
-        return $this->success($this->cards->cardsFor(auth('api')->user()));
+        return $this->success($this->cards->cardsFor($this->authUser()));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'currency' => 'required|in:NGN,USD',
@@ -28,16 +29,16 @@ class CardController extends Controller
             'label' => 'nullable|string',
         ]);
 
-        return $this->success($this->cards->create(auth('api')->user(), $data['currency'], (float) $data['amount'], $data['label'] ?? null));
+        return $this->success($this->cards->create($this->authUser(), $data['currency'], (float) $data['amount'], $data['label'] ?? null));
     }
 
-    public function fund(Request $request)
+    public function fund(Request $request): JsonResponse
     {
         $data = $request->validate([
             'virtual_card_id' => 'required|string',
             'amount' => 'required|numeric|min:1',
         ]);
 
-        return $this->success($this->cards->fund(auth('api')->user(), $data['virtual_card_id'], (float) $data['amount']));
+        return $this->success($this->cards->fund($this->authUser(), $data['virtual_card_id'], (float) $data['amount']));
     }
 }

@@ -8,6 +8,7 @@ use App\Payment;
 use App\Referer;
 use App\Transaction;
 use App\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
@@ -27,7 +28,7 @@ class PaymentService
      *
      * @return array{amount: float|int, referral_amount: float|int}
      */
-    public static function splitAmount($price, $referralAmount, int $quantity): array
+    public static function splitAmount(int|float $price, int|float $referralAmount, int $quantity): array
     {
         $total = $quantity * $price;
         $referral = $quantity * $referralAmount;
@@ -41,7 +42,7 @@ class PaymentService
     /**
      * Whether a payment with this id has already been recorded.
      */
-    public function exists($paymentId): bool
+    public function exists(int|string $paymentId): bool
     {
         return Payment::where('payment_id', $paymentId)->exists();
     }
@@ -53,12 +54,19 @@ class PaymentService
      * The caller must be the buyer, the payment must be successful and cover the price, and a
      * payment id can only ever be recorded once.
      *
+     * @param array{
+     *     transaction_id: int|string,
+     *     payment_id: int|string,
+     *     payment_ref?: string|null,
+     *     description?: string|null
+     * } $attributes
+     *
      * @throws PaymentVerificationException
      */
     public function recordVerifiedPayment(int $userId, array $attributes): Payment
     {
         $buyer = User::findOrFail($userId);
-        $reference = $attributes['payment_ref'] ?? $attributes['payment_id'];
+        $reference = (string) ($attributes['payment_ref'] ?? $attributes['payment_id']);
 
         return DB::transaction(function () use ($buyer, $attributes, $reference) {
             // Serialise payments for one transaction so a double submit cannot record twice.
@@ -77,6 +85,11 @@ class PaymentService
             }
 
             $product = $transaction->product;
+
+            if ($product->price === null) {
+                throw PaymentVerificationException::failed();
+            }
+
             $expected = $product->price * $transaction->quantity;
             $this->assertPaid($reference, $expected);
 
@@ -89,7 +102,7 @@ class PaymentService
                 'description' => $attributes['description'] ?? null,
             ]);
 
-            $split = self::splitAmount($product->price, $product->referral_amount, (int) $transaction->quantity);
+            $split = self::splitAmount($product->price, $product->referral_amount ?? 0, (int) $transaction->quantity);
 
             $product->update(['quantity' => $product->quantity - $transaction->quantity]);
             $transaction->update(['amount' => $split['amount']]);
@@ -106,7 +119,7 @@ class PaymentService
      *
      * @throws PaymentVerificationException
      */
-    protected function assertPaid(string $reference, $expected): void
+    protected function assertPaid(string $reference, int|float $expected): void
     {
         $data = $this->flutterwave->verify_payment($reference)['data'] ?? [];
 
@@ -121,6 +134,9 @@ class PaymentService
 
     /**
      * Build the Flutterwave card charge payload for $user.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
      */
     public function cardPayload(User $user, array $input): array
     {
@@ -149,7 +165,8 @@ class PaymentService
     /**
      * Start a card charge, retrying with PIN authorisation when Flutterwave asks for it.
      *
-     * @return array the Flutterwave `data` object (contains `authurl` or the next auth step)
+     * @param array<string, mixed> $input
+     * @return array<string, mixed> the Flutterwave `data` object (contains `authurl` or the next auth step)
      *
      * @throws AppException when the card cannot be charged
      */
@@ -184,7 +201,8 @@ class PaymentService
         return $data;
     }
 
-    public function listFor(User $user)
+    /** @return Collection<int, Payment> */
+    public function listFor(User $user): Collection
     {
         return Payment::where('user_id', $user->id)->with('product')->get();
     }

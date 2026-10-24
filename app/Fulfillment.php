@@ -2,6 +2,8 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Model;
 
 class Fulfillment extends Model
@@ -13,23 +15,27 @@ class Fulfillment extends Model
     const PENDING = 0;
     const SUCCESSFUL = 1;
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo(User::class);
     }
 
-    public function payment()
+    /** @return HasOne<Payment, $this> */
+    public function payment(): HasOne
     {
-        return $this->hasOne('App\Payment');
+        return $this->hasOne(Payment::class);
     }
 
-    public function product()
+    /** @return HasOne<Product, $this> */
+    public function product(): HasOne
     {
-        return $this->hasOne('App\Product');
+        return $this->hasOne(Product::class);
     }
 
-    public function transaction()
+    /** @return BelongsTo<Transaction, $this> */
+    public function transaction(): BelongsTo
     {
-        return $this->belongsTo('App\Transaction');
+        return $this->belongsTo(Transaction::class);
     }
 }

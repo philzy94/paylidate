@@ -13,6 +13,7 @@ use App\Transaction;
 use App\User;
 use App\Withdrawal;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -41,8 +42,10 @@ class TransactionService
 
     /**
      * Transactions the user is a party to (as initiator or as the product owner).
+     *
+     * @return Collection<int, Transaction>
      */
-    public function listFor(User $user)
+    public function listFor(User $user): Collection
     {
         return Transaction::with('product', 'payment')
             ->orderBy('created_at', 'desc')
@@ -58,6 +61,13 @@ class TransactionService
 
     /**
      * Create a transaction for $user, optionally crediting a referrer.
+     *
+     * @param array{
+     *     product_id: int|string,
+     *     quantity: int,
+     *     referral_token?: string|null,
+     *     description?: string|null
+     * } $data
      *
      * @throws TransactionException
      */
@@ -104,18 +114,18 @@ class TransactionService
      */
     public function notifyCreated(Transaction $transaction, User $buyer, bool $initiateFulfilment = false): void
     {
-        $seller = $transaction->product->user;
+        $seller = $this->productOf($transaction)->user ?? throw TransactionException::notFound();
         $details = $this->emailDetails($transaction);
 
         if ($initiateFulfilment) {
             $this->fulfilmentService->initiate_fufilment(
                 $seller->email,
-                $seller->name,
+                (string) $seller->name,
                 $buyer->email,
-                $buyer->name,
+                (string) $buyer->name,
                 $buyer->id,
                 $transaction->id,
-                $transaction->transaction_ref,
+                (string) $transaction->transaction_ref,
                 $details
             );
         }
@@ -143,11 +153,13 @@ class TransactionService
             $transaction->update(['status' => self::STATUS_EXPIRED_REPORT]);
         }
 
-        $sellerId = $transaction->product->transaction_type == 'sell'
-            ? $transaction->product->user_id
+        $product = $this->productOf($transaction);
+
+        $sellerId = $product->transaction_type == 'sell'
+            ? $product->user_id
             : $transaction->user_id;
 
-        $transaction['product_initiator'] = User::find($transaction->product->user_id);
+        $transaction['product_initiator'] = User::find($product->user_id);
         $transaction['seller_email'] = optional(User::find($sellerId))->email;
         $transaction['referral'] = Referer::find($transaction->referer_id);
         $transaction['bank'] = $viewer ? Bank::where('user_id', $viewer->id)->first() : null;
@@ -190,7 +202,7 @@ class TransactionService
 
         $transaction->update(['status' => self::STATUS_COMPLETED]);
 
-        if ($transaction->product->transaction_type == 'sell') {
+        if ($this->productOf($transaction)->transaction_type == 'sell') {
             Referer::where('id', $transaction->referer_id)->update(['transaction_status' => true]);
         }
 
@@ -216,7 +228,7 @@ class TransactionService
         ]);
 
         $seller = User::where('email', $sellerEmail)->first();
-        $reference = $transaction->transaction_ref;
+        $reference = (string) $transaction->transaction_ref;
 
         Mail::to($sellerEmail)->send(new ReportTransaction(optional($seller)->name, $reference, 'report', $report));
         $this->notifyStaff(new ReportTransaction('Admin', $reference, 'report', $report));
@@ -240,7 +252,7 @@ class TransactionService
         $transaction->update(['status' => self::STATUS_CANCELLED]);
 
         $seller = User::where('email', $sellerEmail)->first();
-        $reference = $transaction->transaction_ref;
+        $reference = (string) $transaction->transaction_ref;
 
         Mail::to($sellerEmail)->send(new ReportTransaction(optional($seller)->name, $reference, 'resolve'));
         $this->notifyStaff(new ReportTransaction('Admin', $reference, 'resolve'));
@@ -261,16 +273,21 @@ class TransactionService
             throw TransactionException::notAllowed();
         }
 
-        DB::transaction(function () use ($transaction) {
+        $product = $this->productOf($transaction);
+
+        DB::transaction(function () use ($transaction, $product) {
             $transaction->update(['status' => self::STATUS_CANCELLED]);
-            $transaction->product->update([
-                'quantity' => $transaction->product->quantity + $transaction->quantity,
+            $product->update([
+                'quantity' => $product->quantity + $transaction->quantity,
             ]);
         });
 
         return $transaction;
     }
 
+    /**
+     * @param list<string> $with
+     */
     protected function find(int $id, array $with = []): Transaction
     {
         $transaction = Transaction::with($with)->find($id);
@@ -280,6 +297,16 @@ class TransactionService
         }
 
         return $transaction;
+    }
+
+    /**
+     * The product a transaction was made for.
+     *
+     * @throws TransactionException when the product no longer exists
+     */
+    protected function productOf(Transaction $transaction): Product
+    {
+        return $transaction->product ?? throw TransactionException::notFound();
     }
 
     protected function isInvolved(Transaction $transaction, User $user): bool
@@ -292,9 +319,10 @@ class TransactionService
      */
     public function isBuyer(Transaction $transaction, User $user): bool
     {
-        $type = $transaction->product->transaction_type;
+        $product = $this->productOf($transaction);
+        $type = $product->transaction_type;
 
-        return ($type == 'buy' && $transaction->product->user_id == $user->id)
+        return ($type == 'buy' && $product->user_id == $user->id)
             || ($type == 'sell' && $transaction->user_id == $user->id);
     }
 
@@ -314,9 +342,12 @@ class TransactionService
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function emailDetails(Transaction $transaction): array
     {
-        $product = $transaction->product;
+        $product = $this->productOf($transaction);
 
         return [
             'id' => $transaction->id,

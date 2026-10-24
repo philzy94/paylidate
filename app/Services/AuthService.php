@@ -21,7 +21,7 @@ class AuthService
     /**
      * Register a user, or let someone claim a deactivated/placeholder account.
      *
-     * @param  array  $data  name, email, password and optional phone
+     * @param  array<string, mixed>  $data  name, email, password and optional phone
      * @return array{user: User, token: string}
      *
      * @throws AuthException
@@ -72,6 +72,10 @@ class AuthService
 
         $user = Auth::user();
 
+        if (! $user instanceof User) {
+            throw AuthException::invalidCredentials();
+        }
+
         if (! $user->active) {
             throw AuthException::inactive();
         }
@@ -83,15 +87,20 @@ class AuthService
     {
         $result = $user->createToken('Personal Access Token');
 
-        if ($rememberMe) {
-            $result->token->expires_at = Carbon::now()->addWeeks(4);
-        }
+        $token = $result->getToken();
 
-        $result->token->save();
+        if ($token !== null) {
+            if ($rememberMe) {
+                $token->expires_at = Carbon::now()->addWeeks(4);
+            }
+
+            $token->save();
+        }
 
         return $result->accessToken;
     }
 
+    /** @param array<string, mixed> $data */
     protected function claim(User $user, array $data): User
     {
         $user->update([
@@ -106,6 +115,7 @@ class AuthService
         return $user;
     }
 
+    /** @param array<string, mixed> $data */
     protected function create(array $data, ?User $referrer): User
     {
         return User::create([
@@ -129,11 +139,12 @@ class AuthService
      * Update the caller's own profile. Only whitelisted fields can change, so a client
      * can never promote itself to admin or reactivate an account.
      */
+    /** @param array<string, mixed> $data */
     public function updateProfile(User $user, array $data): User
     {
         $user->update(array_intersect_key($data, array_flip(['name', 'phone', 'avatar'])));
 
-        return $user->fresh();
+        return $user->refresh();
     }
 
     /**

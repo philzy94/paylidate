@@ -20,7 +20,7 @@ class CreateProductsTable extends Migration
             $table->string('slug');
             $table->string('image')->nullable()->default('default_product.png');
             $table->string('product_number')->nullable();
-            $table->double('price', 15, 8)->nullable()->default(0.00);
+            $table->double('price')->nullable()->default(0.00);
             $table->integer('quantity')->unsigned()->nullable()->default(0);
             $table->longText('description')->nullable();
             $table->string('type')->nullable();// product, or service

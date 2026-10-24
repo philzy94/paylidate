@@ -17,10 +17,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = env('SEED_ADMIN_EMAIL');
-        $password = env('SEED_ADMIN_PASSWORD');
+        $email = config('app.seed_admin.email');
+        $password = config('app.seed_admin.password');
 
-        if ($email && $password) {
+        if (is_string($email) && is_string($password) && $email !== '' && $password !== '') {
             User::updateOrCreate(['email' => $email], [
                 'name' => 'Paylidate Admin',
                 'password' => Hash::make($password),

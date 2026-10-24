@@ -15,7 +15,7 @@ class AddRefererIdToTransactionTable extends Migration
     {
         Schema::table('transactions', function (Blueprint $table) {
             if (!Schema::hasColumn('transactions', 'referer_id')) {
-                $table->foreignId('referer_id')->nullable()->constrained()->after('product_id');
+                $table->foreignId('referer_id')->nullable()->after('product_id')->constrained();
             };
         });
     }

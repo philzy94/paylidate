@@ -12,6 +12,10 @@ use App\Refund;
 use App\Transaction;
 use App\User;
 use App\Withdrawal;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -35,17 +39,20 @@ class PayoutService
 
     // ---------------------------------------------------------------- listing
 
-    public function withdrawals(User $user)
+    /** @return Collection<int, Withdrawal> */
+    public function withdrawals(User $user): Collection
     {
         return $this->scoped(Withdrawal::with('user', 'transaction', 'payment', 'bank'), $user)->orderBy('created_at')->get();
     }
 
-    public function refunds(User $user)
+    /** @return Collection<int, Refund> */
+    public function refunds(User $user): Collection
     {
         return $this->scoped(Refund::with('user', 'transaction', 'payment', 'bank'), $user)->orderBy('created_at')->get();
     }
 
-    public function referralWithdrawals(User $user)
+    /** @return Collection<int, ReferralWidrawal> */
+    public function referralWithdrawals(User $user): Collection
     {
         return $this->scoped(ReferralWidrawal::with('user', 'bank'), $user)->orderBy('status')->get();
     }
@@ -54,6 +61,14 @@ class PayoutService
 
     /**
      * A seller asks for the proceeds of a completed transaction.
+     *
+     * @param array{
+     *     transaction_id: int|string,
+     *     payment_id: int|string,
+     *     bank_id: int|string,
+     *     narration?: string|null,
+     *     debit_currency?: string|null
+     * } $data
      */
     public function requestWithdrawal(User $user, array $data): Withdrawal
     {
@@ -88,7 +103,7 @@ class PayoutService
             'status' => false,
         ]);
 
-        Mail::to($user->email)->send(new RequestWithdrawal($user->name, $transaction->id));
+        Mail::to($user->email)->send(new RequestWithdrawal((string) $user->name, $transaction->id));
         $this->notifyStaff(new RequestWithdrawal('Admin', $transaction->id));
 
         return $withdrawal;
@@ -96,6 +111,14 @@ class PayoutService
 
     /**
      * A buyer asks for their money back on a cancelled or disputed transaction.
+     *
+     * @param array{
+     *     transaction_id: int|string,
+     *     payment_id: int|string,
+     *     bank_id: int|string,
+     *     narration?: string|null,
+     *     debit_currency?: string|null
+     * } $data
      */
     public function requestRefund(User $user, array $data): Refund
     {
@@ -136,6 +159,8 @@ class PayoutService
 
     /**
      * Cash out all referral bonuses once they add up to the minimum.
+     *
+     * @param array{narration?: string|null, debit_currency?: string|null} $data
      */
     public function requestReferralWithdrawal(User $user, array $data = []): ReferralWidrawal
     {
@@ -176,12 +201,18 @@ class PayoutService
 
     // -------------------------------------------------------------- transfers
 
+    /** @return array<string, mixed> */
     public function transferWithdrawal(int $id): array
     {
         $withdrawal = $this->pending(Withdrawal::with('transaction.product', 'bank'), $id);
 
-        $amount = $withdrawal->transaction->amount;
-        $result = $this->send($withdrawal->bank, $amount, $withdrawal->narration ?: 'Paylidate withdrawal');
+        $amount = $withdrawal->transaction?->amount;
+
+        if ($amount === null) {
+            throw PayoutException::notEligible('The payout amount has not been set');
+        }
+
+        $result = $this->send($this->bankOf($withdrawal->bank), $amount, $withdrawal->narration ?: 'Paylidate withdrawal');
 
         DB::transaction(function () use ($withdrawal, $result) {
             $withdrawal->update(['status' => true, 'f_withdrawal_id' => $result['id']]);
@@ -191,13 +222,20 @@ class PayoutService
         return $result;
     }
 
+    /** @return array<string, mixed> */
     public function transferRefund(int $id): array
     {
         $refund = $this->pending(Refund::with('transaction.product', 'bank'), $id);
 
         $transaction = $refund->transaction;
-        $amount = $transaction->quantity * $transaction->product->price;
-        $result = $this->send($refund->bank, $amount, $refund->narration ?: 'Paylidate refund');
+        $price = $transaction?->product?->price;
+
+        if (! $transaction || $price === null) {
+            throw PayoutException::notEligible('The refund amount has not been set');
+        }
+
+        $amount = $transaction->quantity * $price;
+        $result = $this->send($this->bankOf($refund->bank), $amount, $refund->narration ?: 'Paylidate refund');
 
         DB::transaction(function () use ($refund, $result) {
             $refund->update(['status' => true, 'f_withdrawal_id' => $result['id']]);
@@ -207,11 +245,16 @@ class PayoutService
         return $result;
     }
 
+    /** @return array<string, mixed> */
     public function transferReferralWithdrawal(int $id): array
     {
         $withdrawal = $this->pending(ReferralWidrawal::with('bank'), $id);
 
-        $result = $this->send($withdrawal->bank, $withdrawal->amount, $withdrawal->narration ?: 'Payment for referral bonus');
+        $result = $this->send(
+            $this->bankOf($withdrawal->bank),
+            $withdrawal->amount,
+            $withdrawal->narration ?: 'Payment for referral bonus'
+        );
 
         DB::transaction(function () use ($withdrawal, $result) {
             $withdrawal->update(['status' => true, 'f_withdrawal_id' => $result['id']]);
@@ -226,12 +269,18 @@ class PayoutService
 
     // ---------------------------------------------------------------- helpers
 
-    protected function scoped($query, User $user)
+    /**
+     * @template TModel of Model
+     *
+     * @param Builder<TModel> $query
+     * @return Builder<TModel>
+     */
+    protected function scoped(Builder $query, User $user): Builder
     {
         return $user->is_admin ? $query : $query->where('user_id', $user->id);
     }
 
-    protected function transaction($id): Transaction
+    protected function transaction(int|string $id): Transaction
     {
         $transaction = Transaction::with('product')->find($id);
 
@@ -242,7 +291,7 @@ class PayoutService
         return $transaction;
     }
 
-    protected function paymentFor(Transaction $transaction, $paymentId): Payment
+    protected function paymentFor(Transaction $transaction, int|string $paymentId): Payment
     {
         $payment = Payment::where('id', $paymentId)->where('transaction_id', $transaction->id)->first();
 
@@ -253,7 +302,12 @@ class PayoutService
         return $payment;
     }
 
-    protected function ownBank(User $user, $bankId): Bank
+    protected function bankOf(?Bank $bank): Bank
+    {
+        return $bank ?? throw PayoutException::noBank();
+    }
+
+    protected function ownBank(User $user, int|string $bankId): Bank
     {
         $bank = Bank::where('id', $bankId)->where('user_id', $user->id)->first();
 
@@ -271,11 +325,21 @@ class PayoutService
     {
         $product = $transaction->product;
 
+        if (! $product) {
+            return false;
+        }
+
         return ($product->transaction_type == 'sell' && $product->user_id == $user->id)
             || ($product->transaction_type == 'buy' && $transaction->user_id == $user->id);
     }
 
-    protected function pending($query, int $id)
+    /**
+     * @template TRequest of Withdrawal|Refund|ReferralWidrawal
+     *
+     * @param Builder<TRequest> $query
+     * @return TRequest
+     */
+    protected function pending(Builder $query, int $id): Model
     {
         $request = $query->lockForUpdate()->find($id);
 
@@ -293,9 +357,9 @@ class PayoutService
     /**
      * Transfer money from the platform account to a stored bank account.
      *
-     * @return array the provider's `data` object (contains the transfer id)
+     * @return array<string, mixed> the provider's `data` object (contains the transfer id)
      */
-    protected function send(Bank $bank, $amount, string $narration): array
+    protected function send(Bank $bank, int|float|string $amount, string $narration): array
     {
         $response = $this->flutterwave->transfer_to_bank([
             'account_bank' => $bank->bank_code,
@@ -311,7 +375,7 @@ class PayoutService
         return $response['data'];
     }
 
-    protected function notifyStaff($mail): void
+    protected function notifyStaff(Mailable $mail): void
     {
         $recipients = config('app.admin_emails');
 

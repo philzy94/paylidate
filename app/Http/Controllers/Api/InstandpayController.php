@@ -5,34 +5,35 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\InstantPayService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class InstandpayController extends Controller
 {
-    protected $instantPay;
+    protected InstantPayService $instantPay;
 
     public function __construct(InstantPayService $instantPay)
     {
         $this->instantPay = $instantPay;
     }
 
-    public function receive()
+    public function receive(): JsonResponse
     {
-        return $this->success($this->instantPay->received(auth('api')->user()));
+        return $this->success($this->instantPay->received($this->authUser()));
     }
 
-    public function send()
+    public function send(): JsonResponse
     {
-        return $this->success($this->instantPay->sent(auth('api')->user()));
+        return $this->success($this->instantPay->sent($this->authUser()));
     }
 
-    public function verify_user($phone_number)
+    public function verify_user(string $phone_number): JsonResponse
     {
-        $name = $this->instantPay->receiverName(auth('api')->user(), $phone_number);
+        $name = $this->instantPay->receiverName($this->authUser(), $phone_number);
 
         return response()->json(['status' => 'success', 'message' => 'success', 'name' => $name]);
     }
 
-    public function transfer(Request $request)
+    public function transfer(Request $request): JsonResponse
     {
         $data = $request->validate([
             'receiver_number' => 'required|digits:11',
@@ -41,7 +42,7 @@ class InstandpayController extends Controller
         ]);
 
         return $this->success($this->instantPay->send(
-            auth('api')->user(),
+            $this->authUser(),
             $data['receiver_number'],
             $data['payment_ref'],
             $data['description'] ?? null
@@ -49,7 +50,7 @@ class InstandpayController extends Controller
     }
 
     // Verify the PIN and register the bank account to pay out to
-    public function verify(Request $request)
+    public function verify(Request $request): JsonResponse
     {
         $data = $request->validate([
             'withdrawal_pin' => 'required|numeric',
@@ -59,7 +60,7 @@ class InstandpayController extends Controller
         ]);
 
         return $this->success($this->instantPay->claim(
-            auth('api')->user(),
+            $this->authUser(),
             $data['link_token'],
             (string) $data['withdrawal_pin'],
             (string) $data['bank_code'],
@@ -67,10 +68,10 @@ class InstandpayController extends Controller
         ));
     }
 
-    public function withdraw(Request $request)
+    public function withdraw(Request $request): JsonResponse
     {
         $data = $request->validate(['id' => 'required|numeric']);
 
-        return $this->success($this->instantPay->withdraw(auth('api')->user(), (int) $data['id']), 'Transfer successful');
+        return $this->success($this->instantPay->withdraw($this->authUser(), (int) $data['id']), 'Transfer successful');
     }
 }

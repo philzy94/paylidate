@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class ReferralWidrawal extends Model
@@ -11,13 +12,15 @@ class ReferralWidrawal extends Model
     ];
 
 
-    public function bank()
+    /** @return BelongsTo<Bank, $this> */
+    public function bank(): BelongsTo
     {
-        return $this->belongsTo('App\Bank');
+        return $this->belongsTo(Bank::class);
     }
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo(User::class);
     }
 }

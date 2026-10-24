@@ -26,7 +26,7 @@ return [
     'key' => env('APP_KEY'),
 
     'previous_keys' => [
-        ...array_filter(explode(',', env('APP_PREVIOUS_KEYS', ''))),
+        ...array_filter(explode(',', (string) env('APP_PREVIOUS_KEYS', ''))),
     ],
 
     'maintenance' => [
@@ -37,9 +37,15 @@ return [
     'domain' => env('DOMAIN'),
 
     // Base URL of the web client, used in emailed links.
-    'frontend_url' => rtrim(env('FRONTEND_URL', 'https://paylidate.com'), '/'),
+    'frontend_url' => rtrim((string) env('FRONTEND_URL', 'https://paylidate.com'), '/'),
 
     // Comma separated list of staff addresses notified about withdrawals and reports.
-    'admin_emails' => array_filter(explode(',', env('ADMIN_EMAILS', ''))),
+    // Credentials for the admin account created by the database seeder.
+    'seed_admin' => [
+        'email' => env('SEED_ADMIN_EMAIL'),
+        'password' => env('SEED_ADMIN_PASSWORD'),
+    ],
+
+    'admin_emails' => array_filter(explode(',', (string) env('ADMIN_EMAILS', ''))),
 
 ];

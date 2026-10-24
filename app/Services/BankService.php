@@ -21,6 +21,8 @@ class BankService
     /**
      * Look up the holder of a bank account.
      *
+     * @return array<string, mixed>
+     *
      * @throws BankException
      */
     public function resolve(string $accountNumber, string $bankCode): array
@@ -46,6 +48,8 @@ class BankService
 
     /**
      * Save (or replace) the user's bank account.
+     *
+     * @param array<string, mixed> $data
      */
     public function save(User $user, array $data): Bank
     {

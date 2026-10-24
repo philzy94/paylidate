@@ -9,6 +9,7 @@ use App\Exceptions\TransactionException;
 use App\Mail\DisputeMail;
 use App\Transaction;
 use App\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -24,7 +25,8 @@ class DisputeService
     /**
      * Disputes on a transaction, visible to its two parties and to staff.
      */
-    public function forTransaction(User $user, int $transactionId)
+    /** @return Collection<int, Dispute> */
+    public function forTransaction(User $user, int $transactionId): Collection
     {
         $transaction = $this->transaction($transactionId);
         $this->authorize($user, $transaction);
@@ -58,9 +60,9 @@ class DisputeService
 
         $details = $this->transactions->emailDetails($transaction->load('payment'));
 
-        foreach ([$transaction->secondary_user, $transaction->product->user] as $party) {
+        foreach ([$transaction->secondary_user, $transaction->product?->user] as $party) {
             if ($party) {
-                Mail::to($party->email)->send(new DisputeMail($subject, $description, $details, $party->name));
+                Mail::to($party->email)->send(new DisputeMail($subject, $description, $details, $party->name ?? ''));
             }
         }
 
@@ -104,10 +106,11 @@ class DisputeService
         return $dispute->load('user', 'transaction');
     }
 
-    public function messages(User $user, int $disputeId)
+    /** @return Collection<int, DisputeChat> */
+    public function messages(User $user, int $disputeId): Collection
     {
         $dispute = $this->dispute($disputeId);
-        $this->authorize($user, $dispute->transaction);
+        $this->authorize($user, $this->transactionOf($dispute));
 
         return DisputeChat::where('dispute_id', $disputeId)->with('user:id,name')->orderBy('created_at')->get();
     }
@@ -115,7 +118,7 @@ class DisputeService
     public function addMessage(User $user, int $disputeId, string $message): DisputeChat
     {
         $dispute = $this->dispute($disputeId);
-        $this->authorize($user, $dispute->transaction);
+        $this->authorize($user, $this->transactionOf($dispute));
 
         return DisputeChat::create([
             'user_id' => $user->id,
@@ -137,6 +140,11 @@ class DisputeService
         return $dispute;
     }
 
+    protected function transactionOf(Dispute $dispute): Transaction
+    {
+        return $dispute->transaction ?? throw TransactionException::notFound();
+    }
+
     protected function transaction(int $id): Transaction
     {
         $transaction = Transaction::with('product.user', 'secondary_user')->find($id);
@@ -150,7 +158,7 @@ class DisputeService
 
     protected function authorize(User $user, Transaction $transaction, bool $allowStaff = true): void
     {
-        $isParty = $transaction->user_id === $user->id || $transaction->product->user_id === $user->id;
+        $isParty = $transaction->user_id === $user->id || $transaction->product?->user_id === $user->id;
 
         if (! $isParty && ! ($allowStaff && $user->is_admin)) {
             throw DisputeException::forbidden();

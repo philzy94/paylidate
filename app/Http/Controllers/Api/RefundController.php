@@ -5,22 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\PayoutService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class RefundController extends Controller
 {
-    protected $payouts;
+    protected PayoutService $payouts;
 
     public function __construct(PayoutService $payouts)
     {
         $this->payouts = $payouts;
     }
 
-    public function index()
+    public function index(): JsonResponse
     {
-        return $this->success($this->payouts->refunds(auth('api')->user()));
+        return $this->success($this->payouts->refunds($this->authUser()));
     }
 
-    public function request_Refund(Request $request)
+    public function request_Refund(Request $request): JsonResponse
     {
         $data = $request->validate([
             'transaction_id' => 'required|numeric',
@@ -30,13 +31,13 @@ class RefundController extends Controller
             'debit_currency' => 'required|string',
         ]);
 
-        return $this->success($this->payouts->requestRefund(auth('api')->user(), $data));
+        return $this->success($this->payouts->requestRefund($this->authUser(), $data));
     }
 
     /**
      * Staff only (see the `admin` middleware on the route).
      */
-    public function transfer_to_bank(Request $request)
+    public function transfer_to_bank(Request $request): JsonResponse
     {
         $data = $request->validate(['id' => 'required|numeric']);
 

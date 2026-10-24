@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class Refund extends Model
@@ -11,23 +12,27 @@ class Refund extends Model
         'debit_currency','f_withdrawal_id', 'status'
      ];
 
-    public function bank()
+    /** @return BelongsTo<Bank, $this> */
+    public function bank(): BelongsTo
     {
-        return $this->belongsTo('App\Bank');
+        return $this->belongsTo(Bank::class);
     }
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo(User::class);
     }
 
-    public function transaction()
+    /** @return BelongsTo<Transaction, $this> */
+    public function transaction(): BelongsTo
     {
-        return $this->belongsTo('App\Transaction');
+        return $this->belongsTo(Transaction::class);
     }
 
-    public function payment()
+    /** @return BelongsTo<Payment, $this> */
+    public function payment(): BelongsTo
     {
-        return $this->belongsTo('App\Payment');
+        return $this->belongsTo(Payment::class);
     }
 }

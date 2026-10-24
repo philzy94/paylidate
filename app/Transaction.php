@@ -2,6 +2,9 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
@@ -11,47 +14,56 @@ class Transaction extends Model
         'amount', 'accept_transaction', 'dispute', 'description', 'referer_id'
     ];
 
-    public function secondary_user()
+    /** @return BelongsTo<User, $this> */
+    public function secondary_user(): BelongsTo
     {
-        return $this->belongsTo('App\User', 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
-        return $this->belongsTo('App\Product');
+        return $this->belongsTo(Product::class);
     }
 
-    public function referral()
+    /** @return BelongsTo<Referer, $this> */
+    public function referral(): BelongsTo
     {
-        return $this->belongsTo('App\Referer');
+        return $this->belongsTo(Referer::class);
     }
 
-    public function payment()
+    /** @return HasOne<Payment, $this> */
+    public function payment(): HasOne
     {
-        return $this->hasOne('App\Payment');
+        return $this->hasOne(Payment::class);
     }
 
-    public function dispute_chat()
+    /** @return HasMany<DisputeChat, $this> */
+    public function dispute_chat(): HasMany
     {
-        return $this->hasMany('App\DisputeChat');
+        return $this->hasMany(DisputeChat::class);
     }
 
-    public function dispute()
+    /** @return HasMany<Dispute, $this> */
+    public function dispute(): HasMany
     {
-        return $this->hasMany('App\Dispute');
+        return $this->hasMany(Dispute::class);
     }
 
-    public function withdrawal()
+    /** @return HasOne<Withdrawal, $this> */
+    public function withdrawal(): HasOne
     {
-        return $this->hasOne('App\Withdrawal');
+        return $this->hasOne(Withdrawal::class);
     }
-    public function refund()
+    /** @return HasOne<Refund, $this> */
+    public function refund(): HasOne
     {
-        return $this->hasOne('App\Refund');
+        return $this->hasOne(Refund::class);
     }
-    public function fulfilment()
+    /** @return HasOne<Fulfillment, $this> */
+    public function fulfilment(): HasOne
     {
-        return $this->hasOne('App\Fulfillment');
+        return $this->hasOne(Fulfillment::class);
     }
 }

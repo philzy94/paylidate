@@ -2,6 +2,8 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Wallet extends Model
@@ -10,18 +12,21 @@ class Wallet extends Model
         'user_id', 'order_ref', 'tx_ref', 'account_number', 'balance', 'bonus', 'bank_name'
     ];
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo(User::class);
     }
 
-    public function wallet_settlement()
+    /** @return HasMany<WalletsettlementId, $this> */
+    public function wallet_settlement(): HasMany
     {
-        return $this->hasMany('App\WalletsettlementId');
+        return $this->hasMany(WalletsettlementId::class);
     }
 
-    public function wallet_history()
+    /** @return HasMany<WalletHistory, $this> */
+    public function wallet_history(): HasMany
     {
-        return $this->hasMany('App\WalletHistory');
+        return $this->hasMany(WalletHistory::class);
     }
 }

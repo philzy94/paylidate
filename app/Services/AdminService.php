@@ -8,22 +8,26 @@ use App\Refund;
 use App\Transaction;
 use App\User;
 use App\Wallet;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Read-only reporting for the admin dashboard.
  */
 class AdminService
 {
-    public function users()
+    /** @return Collection<int, User> */
+    public function users(): Collection
     {
         return User::with('products')->orderBy('name', 'ASC')->get();
     }
 
-    public function usersBetween(string $startDate, string $endDate)
+    /** @return Collection<int, User> */
+    public function usersBetween(string $startDate, string $endDate): Collection
     {
         return User::whereBetween('created_at', [$startDate, $endDate])->get();
     }
 
+    /** @return array<string, mixed> */
     public function overview(): array
     {
         $completed = Transaction::where('status', TransactionService::STATUS_COMPLETED);
@@ -32,7 +36,10 @@ class AdminService
         $receivers = User::whereIn('id', $disputes->pluck('transaction.user_id')->filter())->get()->keyBy('id');
 
         foreach ($disputes as $dispute) {
-            $dispute->receiver_name = optional($receivers->get(optional($dispute->transaction)->user_id))->name;
+            $dispute->setAttribute(
+                'receiver_name',
+                optional($receivers->get(optional($dispute->transaction)->user_id))->name
+            );
         }
 
         return [

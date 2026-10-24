@@ -5,17 +5,18 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\PasswordResetService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class PasswordResetController extends Controller
 {
-    protected $resets;
+    protected PasswordResetService $resets;
 
     public function __construct(PasswordResetService $resets)
     {
         $this->resets = $resets;
     }
 
-    public function create(Request $request)
+    public function create(Request $request): JsonResponse
     {
         $data = $request->validate(['email' => 'required|string|email']);
 
@@ -27,14 +28,14 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    public function find($token)
+    public function find(string $token): JsonResponse
     {
         $reset = $this->resets->find($token);
 
         return response()->json(['email' => $reset->email, 'created_at' => $reset->created_at]);
     }
 
-    public function reset(Request $request)
+    public function reset(Request $request): JsonResponse
     {
         $data = $request->validate([
             'email' => 'required|string|email',

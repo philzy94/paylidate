@@ -5,22 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\PayoutService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class WithdrawalController extends Controller
 {
-    protected $payouts;
+    protected PayoutService $payouts;
 
     public function __construct(PayoutService $payouts)
     {
         $this->payouts = $payouts;
     }
 
-    public function index()
+    public function index(): JsonResponse
     {
-        return $this->success($this->payouts->withdrawals(auth('api')->user()));
+        return $this->success($this->payouts->withdrawals($this->authUser()));
     }
 
-    public function request_withdrawal(Request $request)
+    public function request_withdrawal(Request $request): JsonResponse
     {
         $data = $request->validate([
             'transaction_id' => 'required|numeric',
@@ -30,13 +31,13 @@ class WithdrawalController extends Controller
             'debit_currency' => 'required|string',
         ]);
 
-        return $this->success($this->payouts->requestWithdrawal(auth('api')->user(), $data));
+        return $this->success($this->payouts->requestWithdrawal($this->authUser(), $data));
     }
 
     /**
      * Staff only (see the `admin` middleware on the route).
      */
-    public function transfer_to_bank(Request $request)
+    public function transfer_to_bank(Request $request): JsonResponse
     {
         $data = $request->validate(['id' => 'required|numeric']);
 

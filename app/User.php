@@ -2,15 +2,19 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
 use Illuminate\Support\Facades\Http;
 
-class User extends Authenticatable
+class User extends Authenticatable implements OAuthenticatable
 {
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasApiTokens;
     use Notifiable;
@@ -18,7 +22,7 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
-     * @var array
+     * @var list<string>
      */
     protected $fillable = [
         'name', 'email', 'username', 'email_token', 'password', 'phone', 'avatar', 'active', 'is_admin', 'is_staff', 'needs_password_reset', 'referral_token', 'referred_by'
@@ -27,7 +31,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for arrays.
      *
-     * @var array
+     * @var list<string>
      */
     protected $hidden = [
         'password', 'remember_token', 'email_token'
@@ -42,12 +46,12 @@ class User extends Authenticatable
         return ! $this->active || $this->needs_password_reset || strlen($this->password) < 8;
     }
 
-    public function setEmailAttribute($value)
+    public function setEmailAttribute(string $value): void
     {
         $this->attributes['email'] = strtolower($value);
     }
 
-    public function getEmailAttribute($value)
+    public function getEmailAttribute(string $value): string
     {
         return strtolower($value);
     }
@@ -55,75 +59,89 @@ class User extends Authenticatable
     /**
      * The attributes that should be cast to native types.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
-    public function instantpay()
+    /** @return HasOne<Instandpay, $this> */
+    public function instantpay(): HasOne
     {
-        return $this->hasOne('App\Instandpay');
+        return $this->hasOne(Instandpay::class);
     }
-    public function wallet()
+    /** @return HasOne<Wallet, $this> */
+    public function wallet(): HasOne
     {
-        return $this->hasOne('App\Wallet');
-    }
-
-    public function wallet_history()
-    {
-        return $this->hasMany('App\WalletHistory');
+        return $this->hasOne(Wallet::class);
     }
 
-    public function dispute()
+    /** @return HasMany<WalletHistory, $this> */
+    public function wallet_history(): HasMany
     {
-        return $this->hasOne('App\Dispute');
-    }
-    public function dispute_chat()
-    {
-        return $this->hasMany('App\DisputeChat');
+        return $this->hasMany(WalletHistory::class);
     }
 
-    public function account()
+    /** @return HasOne<Dispute, $this> */
+    public function dispute(): HasOne
     {
-        return $this->hasOne('App\UserAccount');
+        return $this->hasOne(Dispute::class);
     }
-    public function bank()
+    /** @return HasMany<DisputeChat, $this> */
+    public function dispute_chat(): HasMany
     {
-        return $this->hasOne('App\Bank');
-    }
-
-    public function products()
-    {
-        return $this->hasMany('App\Product');
+        return $this->hasMany(DisputeChat::class);
     }
 
-    public function transactions()
+    /** @return HasOne<UserAccount, $this> */
+    public function account(): HasOne
     {
-        return $this->hasMany('App\Transaction');
+        return $this->hasOne(UserAccount::class);
+    }
+    /** @return HasOne<Bank, $this> */
+    public function bank(): HasOne
+    {
+        return $this->hasOne(Bank::class);
     }
 
-    public function payments()
+    /** @return HasMany<Product, $this> */
+    public function products(): HasMany
     {
-        return $this->hasMany('App\Payment');
+        return $this->hasMany(Product::class);
     }
 
-    public function refund()
+    /** @return HasMany<Transaction, $this> */
+    public function transactions(): HasMany
     {
-        return $this->hasMany('App\Refund');
-    }
-    public function withdrawal()
-    {
-        return $this->hasMany('App\Withdrawal');
+        return $this->hasMany(Transaction::class);
     }
 
-    public function referral_bonus_withdrawal()
+    /** @return HasMany<Payment, $this> */
+    public function payments(): HasMany
     {
-        return $this->hasMany('App\ReferralWidrawal');
+        return $this->hasMany(Payment::class);
     }
 
-    public function referral()
+    /** @return HasMany<Refund, $this> */
+    public function refund(): HasMany
     {
-        return $this->hasMany('App\Referer');
+        return $this->hasMany(Refund::class);
+    }
+    /** @return HasMany<Withdrawal, $this> */
+    public function withdrawal(): HasMany
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
+    /** @return HasMany<ReferralWidrawal, $this> */
+    public function referral_bonus_withdrawal(): HasMany
+    {
+        return $this->hasMany(ReferralWidrawal::class);
+    }
+
+    /** @return HasMany<Referer, $this> */
+    public function referral(): HasMany
+    {
+        return $this->hasMany(Referer::class);
     }
 }

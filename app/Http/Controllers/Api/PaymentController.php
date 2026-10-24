@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\FlutterwaveService;
 use App\Services\PaymentService;
+use Illuminate\Http\JsonResponse;
 
 /**
  * @group  Payment management
@@ -14,9 +15,9 @@ use App\Services\PaymentService;
  */
 class PaymentController extends Controller
 {
-    protected $flutterwaveService;
+    protected FlutterwaveService $flutterwaveService;
 
-    protected $paymentService;
+    protected PaymentService $paymentService;
 
     public function __construct(FlutterwaveService $flutterwaveService, PaymentService $paymentService)
     {
@@ -25,12 +26,10 @@ class PaymentController extends Controller
     }
     /**
      * Get all payments.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        return $this->success($this->paymentService->listFor(auth('api')->user()));
+        return $this->success($this->paymentService->listFor($this->authUser()));
     }
 
     /**
@@ -44,11 +43,8 @@ class PaymentController extends Controller
      * @bodyParam status boolean true for paid false un-paid,  false by default
      * @bodyParam expires string expires in a week by default
      * @bodyParam description string
-     *
-     *
-     * @return [string] message
      */
-    public function make_payment(Request $request)
+    public function make_payment(Request $request): JsonResponse
     {
         $data = $request->validate([
             'payment_id' => 'required',
@@ -57,7 +53,7 @@ class PaymentController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $payment = $this->paymentService->recordVerifiedPayment(auth('api')->user()->id, $data);
+        $payment = $this->paymentService->recordVerifiedPayment($this->authUser()->id, $data);
 
         return response()->json([
             'status' => 'success',
@@ -71,19 +67,17 @@ class PaymentController extends Controller
      * Get Single Payment
      *
      * @urlParam id string required
-     *
-     * @return [json] user object
      */
-    public function show($id)
+    public function show(string $id): JsonResponse
     {
-        return $this->success($this->paymentService->findFor(auth('api')->user(), (int) $id));
+        return $this->success($this->paymentService->findFor($this->authUser(), (int) $id));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id): JsonResponse
     {
         $data = $request->validate(['description' => 'nullable|string']);
 
-        return $this->success($this->paymentService->describe(auth('api')->user(), (int) $id, $data['description'] ?? null));
+        return $this->success($this->paymentService->describe($this->authUser(), (int) $id, $data['description'] ?? null));
     }
 
     /**
@@ -91,17 +85,17 @@ class PaymentController extends Controller
      *
      * @urlParam  id string required the id of the payment
      */
-    public function destroy($id)
+    public function destroy(string $id): JsonResponse
     {
-        $this->paymentService->remove(auth('api')->user(), (int) $id);
+        $this->paymentService->remove($this->authUser(), (int) $id);
 
         return response()->json(['status' => 'success', 'message' => 'success']);
     }
 
     // Initiate card payment
-    public function pay_with_card(Request $request)
+    public function pay_with_card(Request $request): JsonResponse
     {
-        $data = $this->paymentService->initiateCardPayment(auth('api')->user(), $request->all());
+        $data = $this->paymentService->initiateCardPayment($this->authUser(), $request->all());
 
         return response()->json([
             'status' => 'success',
@@ -111,7 +105,7 @@ class PaymentController extends Controller
     }
 
 
-    public function validate_payment(Request $request)
+    public function validate_payment(Request $request): JsonResponse
     {
         $data = $request->validate(['flwRef' => 'required|string', 'otp' => 'required|string']);
 
@@ -120,14 +114,14 @@ class PaymentController extends Controller
         return $this->success($response['data'] ?? null, 'Payment validation successful');
     }
 
-    public function verify_payment(Request $request)
+    public function verify_payment(Request $request): JsonResponse
     {
         $data = $request->validate(['flw_T_id' => 'required|string']);
 
         return $this->success($this->flutterwaveService->verify_payment($data['flw_T_id'])['data'] ?? null);
     }
 
-    public function get_rate(Request $request)
+    public function get_rate(Request $request): JsonResponse
     {
         $data = $request->validate([
             'amount' => 'required|numeric',
@@ -140,7 +134,7 @@ class PaymentController extends Controller
         return $this->success($response['data'] ?? null);
     }
 
-    public function banks()
+    public function banks(): JsonResponse
     {
         return $this->success($this->flutterwaveService->banks()['data'] ?? []);
     }

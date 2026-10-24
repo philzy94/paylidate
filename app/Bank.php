@@ -2,6 +2,8 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Bank extends Model
@@ -11,21 +13,25 @@ class Bank extends Model
     ];
     protected $hidden = ['created_at', 'updated_at',  'user_id', 'branch_name'];
 
-    public function withdrawal()
+    /** @return HasMany<Withdrawal, $this> */
+    public function withdrawal(): HasMany
     {
-        return $this->hasMany('App\Withdrawal');
+        return $this->hasMany(Withdrawal::class);
     }
-    public function refund()
+    /** @return HasMany<Refund, $this> */
+    public function refund(): HasMany
     {
-        return $this->hasMany('App\Refund');
+        return $this->hasMany(Refund::class);
     }
-    public function referral_bonus_withdrawal()
+    /** @return HasMany<ReferralWidrawal, $this> */
+    public function referral_bonus_withdrawal(): HasMany
     {
-        return $this->hasMany('App\ReferralWidrawal');
+        return $this->hasMany(ReferralWidrawal::class);
     }
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo(User::class);
     }
 }

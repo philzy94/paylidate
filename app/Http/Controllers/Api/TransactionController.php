@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 /**
  * @group  Transaction management
@@ -13,19 +14,19 @@ use Illuminate\Http\Request;
  */
 class TransactionController extends Controller
 {
-    protected $transactions;
+    protected TransactionService $transactions;
 
     public function __construct(TransactionService $transactions)
     {
         $this->transactions = $transactions;
     }
 
-    public function index()
+    public function index(): JsonResponse
     {
-        return $this->success($this->transactions->listFor(auth('api')->user()));
+        return $this->success($this->transactions->listFor($this->authUser()));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'product_id' => 'required|integer',
@@ -34,7 +35,7 @@ class TransactionController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $user = auth('api')->user();
+        $user = $this->authUser();
         $transaction = $this->transactions->create($user, $data);
         $this->transactions->notifyCreated($transaction, $user, true);
 
@@ -42,28 +43,28 @@ class TransactionController extends Controller
     }
 
     // get individual transaction
-    public function get_transaction($T_ref)
+    public function get_transaction(string $T_ref): JsonResponse
     {
-        return $this->success($this->transactions->details($T_ref, auth('api')->user()));
+        return $this->success($this->transactions->details($T_ref, $this->optionalUser()));
     }
 
-    public function accept($id)
+    public function accept(string $id): JsonResponse
     {
-        return $this->success($this->transactions->setAcceptance($id, auth('api')->user(), true));
+        return $this->success($this->transactions->setAcceptance((int) $id, $this->authUser(), true));
     }
 
-    public function decline($id)
+    public function decline(string $id): JsonResponse
     {
-        return $this->success($this->transactions->setAcceptance($id, auth('api')->user(), false));
+        return $this->success($this->transactions->setAcceptance((int) $id, $this->authUser(), false));
     }
 
     // confirm transaction completion
-    public function confirm($id)
+    public function confirm(string $id): JsonResponse
     {
-        return $this->success($this->transactions->confirm($id, auth('api')->user()));
+        return $this->success($this->transactions->confirm((int) $id, $this->authUser()));
     }
 
-    public function reportTransaction($id, Request $request)
+    public function reportTransaction(string $id, Request $request): JsonResponse
     {
         $data = $request->validate([
             'sellerEmail' => 'required|string|email',
@@ -71,17 +72,17 @@ class TransactionController extends Controller
         ]);
 
         return $this->success(
-            $this->transactions->report($id, auth('api')->user(), $data['sellerEmail'], $data['report'])
+            $this->transactions->report((int) $id, $this->authUser(), $data['sellerEmail'], $data['report'])
         );
     }
 
-    public function resloveReport($id, $sellerEmail)
+    public function resloveReport(string $id, string $sellerEmail): JsonResponse
     {
-        return $this->success($this->transactions->resolveReport($id, auth('api')->user(), $sellerEmail));
+        return $this->success($this->transactions->resolveReport((int) $id, $this->authUser(), $sellerEmail));
     }
 
-    public function cancel($id)
+    public function cancel(string $id): JsonResponse
     {
-        return $this->success($this->transactions->cancel($id, auth('api')->user()));
+        return $this->success($this->transactions->cancel((int) $id, $this->authUser()));
     }
 }

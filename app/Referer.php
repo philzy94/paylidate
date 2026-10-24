@@ -2,6 +2,8 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Model;
 
 class Referer extends Model
@@ -10,13 +12,15 @@ class Referer extends Model
         'user_id','amount'
     ];
 
-    public function transaction()
+    /** @return HasOne<Transaction, $this> */
+    public function transaction(): HasOne
     {
-        return $this->hasOne('App\Transaction');
+        return $this->hasOne(Transaction::class);
     }
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo(User::class);
     }
 }

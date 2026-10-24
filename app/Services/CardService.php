@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\CardException;
 use App\User;
 use App\VirtualCard;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Virtual cards are funded from the user's own wallet, never from the platform balance.
@@ -26,15 +27,18 @@ class CardService
         $this->wallets = $wallets;
     }
 
-    public function cardsFor(User $user)
+    /** @return Collection<int, VirtualCard> */
+    public function cardsFor(User $user): Collection
     {
-        return VirtualCard::where('user_id', $user->id)->get()->each(function ($card) {
-            $card->data = $this->flutterwave->getvirtualCard($card->card_id)['data'] ?? null;
+        return VirtualCard::where('user_id', $user->id)->get()->each(function (VirtualCard $card) {
+            $card->setAttribute('data', $this->flutterwave->getvirtualCard((string) $card->card_id)['data'] ?? null);
         });
     }
 
     /**
      * Create a card funded with $amount (less the fee), paid from the user's wallet.
+     *
+     * @return array<string, mixed>
      */
     public function create(User $user, string $currency, float $amount, ?string $label): array
     {
@@ -46,7 +50,7 @@ class CardService
 
         $this->wallets->spend($user, $amount, 'Virtual card creation');
 
-        $response = $this->flutterwave->virtualCard($currency, $funding, $user->name);
+        $response = $this->flutterwave->virtualCard($currency, $funding, $user->name ?? '');
 
         if (($response['status'] ?? null) !== 'success') {
             $this->wallets->creditWalletById($user->id, $amount);
@@ -67,6 +71,8 @@ class CardService
 
     /**
      * Top up one of the user's own cards from their wallet.
+     *
+     * @return array<string, mixed>
      */
     public function fund(User $user, string $cardId, float $amount): array
     {
@@ -78,7 +84,7 @@ class CardService
 
         $this->wallets->spend($user, $amount, 'Virtual card funding');
 
-        $response = $this->flutterwave->fundVirtualCard($card->card_id, $amount);
+        $response = $this->flutterwave->fundVirtualCard((string) $card->card_id, $amount);
 
         if (($response['status'] ?? null) !== 'success') {
             $this->wallets->creditWalletById($user->id, $amount);

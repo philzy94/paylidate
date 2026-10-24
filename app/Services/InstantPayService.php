@@ -8,6 +8,7 @@ use App\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Send money to another user's phone number; the receiver cashes out to a bank account
@@ -25,12 +26,14 @@ class InstantPayService
         $this->sms = $sms;
     }
 
-    public function sent(User $user)
+    /** @return Collection<int, Instandpay> */
+    public function sent(User $user): Collection
     {
         return Instandpay::where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
     }
 
-    public function received(User $user)
+    /** @return Collection<int, Instandpay> */
+    public function received(User $user): Collection
     {
         return Instandpay::where('receiver_id', $user->id)->orderBy('created_at', 'desc')->get();
     }
@@ -46,7 +49,7 @@ class InstantPayService
             throw InstantPayException::toSelf();
         }
 
-        return $receiver->name;
+        return $receiver->name ?? '';
     }
 
     /**

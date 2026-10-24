@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class WalletHistory extends Model
@@ -10,12 +11,14 @@ class WalletHistory extends Model
         'user_id', 'wallet_id', 'type', 'amount', 'narration', 'balance_before', 'balance_after'
     ];
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo('App\User');
+        return $this->belongsTo(User::class);
     }
-    public function wallet()
+    /** @return BelongsTo<Wallet, $this> */
+    public function wallet(): BelongsTo
     {
-        return $this->belongsTo('App\Wallet');
+        return $this->belongsTo(Wallet::class);
     }
 }

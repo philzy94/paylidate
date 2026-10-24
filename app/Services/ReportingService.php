@@ -10,12 +10,14 @@ use App\Transaction;
 use App\User;
 use App\Wallet;
 use App\Withdrawal;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Per-user figures for the dashboard and the referral screens.
  */
 class ReportingService
 {
+    /** @return array<string, mixed> */
     public function dashboard(User $user): array
     {
         $wallet = Wallet::where('user_id', $user->id)->first();
@@ -36,7 +38,8 @@ class ReportingService
         ];
     }
 
-    public function bonuses(User $user)
+    /** @return Collection<int, Referer> */
+    public function bonuses(User $user): Collection
     {
         return Referer::where('user_id', $user->id)
             ->where('amount', '>', 0)
@@ -47,6 +50,7 @@ class ReportingService
             ->get();
     }
 
+    /** @return array<string, mixed> */
     public function referralSummary(User $user): array
     {
         $earned = Referer::where('user_id', $user->id)->where('transaction_status', true);
