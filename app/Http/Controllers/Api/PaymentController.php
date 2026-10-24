@@ -4,16 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\AddMoneyMail;
 use App\Payment;
 use App\Services\FlutterwaveService;
 use App\Services\PaymentService;
 use App\Transaction;
-use Auth;
-use Illuminate\Validation\ValidationException;
-use stdClass;
 use Exception;
 
 /**
@@ -100,35 +94,24 @@ class PaymentController extends Controller
      */
     public function show($id)
     {
-        $Payment = Payment::where('id', $id)->get();
+        $payment = Payment::where('user_id', auth('api')->user()->id)->with('product')->findOrFail($id);
+
         return response()->json([
             'status' => 'success',
             'message' => 'success',
-            'data' => $Payment->load('product')
+            'data' => $payment
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-
-
     public function update(Request $request, $id)
     {
-        $input = $request->all();
-        $Payment = Payment::where('id', $id)->update($input)->get();
+        $payment = Payment::where('user_id', auth('api')->user()->id)->findOrFail($id);
+        $payment->update($request->validate(['description' => 'nullable|string']));
+
         return response()->json([
             'status' => 'success',
             'message' => 'success',
-            'data' => $Payment
+            'data' => $payment
         ]);
     }
 
@@ -140,7 +123,7 @@ class PaymentController extends Controller
      */
     public function destroy($id)
     {
-        $payment = Payment::where('id', $id)->delete();
+        $payment = Payment::where('user_id', auth('api')->user()->id)->findOrFail($id)->delete();
         return response()->json([
             'status' => 'success',
             'message' => 'success',
@@ -153,84 +136,13 @@ class PaymentController extends Controller
     // Initiate card payment
     public function pay_with_card(Request $request)
     {
-        $user = auth('api')->user();
-        $meta = new stdClass();
-        $meta->consumer_id =  $user->name;
-        $meta->consumer_mac = "";
-        $name = explode(' ', $user->name);
-        $lastName = "";
-        if (count($name) > 1) {
-            $lastName = $name[0];
-        }
+        $data = $this->paymentService->initiateCardPayment(auth('api')->user(), $request->all());
 
-        $data = array(
-
-            'PBFPubKey' => config('services.flutterwave.public_key'),
-            'cardno' => $request->cardno,
-            'currency' => $request->currency,
-            'country' => $request->country,
-            'cvv' => strval($request->cvv),
-            'amount' => $request->amount,
-            'expiryyear' => $request->expiryyear,
-            'expirymonth' => $request->expirymonth,
-            'pin' => $request->pin,
-            'email' => $user->email,
-            'phonenumber' => $user->phone,
-            "firstname" => $name[0],
-            "lastname" => $lastName,
-            'txRef' => 'PD' . $user->id . date('dmyHis'),
-            'meta' => $meta,
-            'redirect_url' => $request->redirect_url,
-
-        );
-
-
-        try {
-            $response = $this->flutterwaveService->payviacard($data);
-
-
-            if (empty($response['data']) || $response["status"] != "success" || isset($response['data']['code'])) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'An error occured while trying to initiate transaction. Please try again',
-
-                ], 417);
-            }
-
-            if ($response["status"] == "success" && isset($response["data"]['authurl']) && $response["data"]['authurl'] != 'N/A') {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Payment initiated successfully',
-                    'data' => $response['data']
-                ]);
-            }
-
-
-            if ($response["status"] == "success" && $response["data"]["suggested_auth"] == "PIN") {
-                $data["suggested_auth"] = "PIN";
-                $response = $this->flutterwaveService->payviacard($data);
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Payment initiated successfully',
-                    'data' => $response['data']
-                ]);
-            }
-
-            if ($response["status"] == "success" && $response["data"]["suggested_auth"] == "NOAUTH_INTERNATIONAL") {
-                throw ValidationException::withMessages([
-                    'error' => ['This card can not be charge']
-                ]);
-            }
-        } catch (Exception $e) {
-            report($e);
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An error occured while trying to initiate transaction. Please try again',
-
-            ], 417);
-        }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Payment initiated successfully',
+            'data' => $data
+        ]);
     }
 
 

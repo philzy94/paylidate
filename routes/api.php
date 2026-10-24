@@ -115,7 +115,10 @@ Route::group(['prefix' => 'api'], function () {
             Route::post('transaction/report-transaction/{id}', 'TransactionController@reportTransaction');
             Route::post('transaction/reslove-report/{id}/{sellerEmail}', 'TransactionController@resloveReport');
 
-            Route::resource('payment', 'PaymentController');
+            Route::post('payment/card', 'PaymentController@pay_with_card');
+            Route::post('payment/validate', 'PaymentController@validate_payment');
+            Route::post('payment/verify', 'PaymentController@verify_payment');
+            Route::resource('payment', 'PaymentController')->only(['index', 'show', 'update', 'destroy']);
             Route::post('make-payment', 'PaymentController@make_payment');
 
             Route::resource('card', 'CardController');
