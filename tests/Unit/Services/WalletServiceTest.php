@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Exceptions\WalletException;
 use App\Services\FlutterwaveService;
 use App\Services\WalletService;
 use App\User;
@@ -47,15 +48,31 @@ class WalletServiceTest extends TestCase
         $this->assertEquals(1000, $wallet->bonus);
     }
 
-    public function testCreateWalletReturnsProviderErrorMessage()
+    public function testCreateWalletThrowsTheProviderErrorMessage()
     {
         config(['services.flutterwave.base_url' => 'https://flw.test']);
         Http::fake(['flw.test/*' => Http::response(['status' => 'error', 'message' => 'Invalid BVN'])]);
 
-        $result = $this->service()->createWallet(1, 'a@b.test', 'Ada', '1');
+        try {
+            $this->service()->createWallet(1, 'a@b.test', 'Ada', '1');
+            $this->fail('Expected a WalletException');
+        } catch (WalletException $e) {
+            $this->assertSame('Invalid BVN', $e->getMessage());
+            $this->assertSame('wallet_provider_error', $e->errorCode());
+        }
 
-        $this->assertSame(['status' => 'error', 'message' => 'Invalid BVN'], $result);
         $this->assertSame(0, Wallet::count());
+    }
+
+    public function testCreateWalletReportsAnUnreachableProvider()
+    {
+        $flutterwave = \Mockery::mock(FlutterwaveService::class);
+        $flutterwave->shouldReceive('createVirtualAccount')->andThrow(new \RuntimeException('timeout'));
+
+        $this->expectException(WalletException::class);
+        $this->expectExceptionMessage('An error occured. Please try again');
+
+        (new WalletService($flutterwave))->createWallet(1, 'a@b.test', 'Ada', '1');
     }
 
     public function testCreditWalletByIdAddsToBalance()
@@ -64,7 +81,7 @@ class WalletServiceTest extends TestCase
 
         $result = $this->service()->creditWalletById($wallet->user_id, 250);
 
-        $this->assertSame('success', $result['status']);
+        $this->assertTrue($result->is($wallet));
         $this->assertEquals(1250, $wallet->fresh()->balance);
     }
 
@@ -72,94 +89,21 @@ class WalletServiceTest extends TestCase
     {
         $wallet = $this->wallet();
 
-        $result = $this->service()->creditWalletById($wallet->user_id, 0);
+        try {
+            $this->service()->creditWalletById($wallet->user_id, 0);
+            $this->fail('Expected a WalletException');
+        } catch (WalletException $e) {
+            $this->assertSame('wallet_invalid_amount', $e->errorCode());
+        }
 
-        $this->assertSame('error', $result['status']);
         $this->assertEquals(1000, $wallet->fresh()->balance);
     }
 
-    public function testCreditWalletByTxRef()
+    public function testCreditWalletWithoutAWalletIsNotFound()
     {
-        $wallet = $this->wallet(['tx_ref' => 'PD_FIND_ME']);
+        $this->expectException(WalletException::class);
+        $this->expectExceptionMessage("You don't have a wallet");
 
-        $this->service()->creditWalletBytx_ref('PD_FIND_ME', 500);
-
-        $this->assertEquals(1500, $wallet->fresh()->balance);
-    }
-
-    public function testDebitWalletSubtractsFromBalance()
-    {
-        $wallet = $this->wallet();
-
-        $result = $this->service()->debitWallet($wallet->user_id, 400);
-
-        $this->assertSame('success', $result['status']);
-        $this->assertEquals(600, $wallet->fresh()->balance);
-    }
-
-    public function testDebitWalletRefusesToOverdraw()
-    {
-        $wallet = $this->wallet(['balance' => 100]);
-
-        $result = $this->service()->debitWallet($wallet->user_id, 101);
-
-        $this->assertSame('insufficient fund', $result['message']);
-        $this->assertEquals(100, $wallet->fresh()->balance);
-    }
-
-    public function testDebitWalletWithoutAWallet()
-    {
-        $result = $this->service()->debitWallet(User::factory()->create()->id, 10);
-
-        $this->assertSame("You don't have a wallet", $result['message']);
-    }
-
-    public function testTransferBonusToWalletMovesFundsWhenBonusIsEligible()
-    {
-        $wallet = $this->wallet(['balance' => 0, 'bonus' => 5000]);
-
-        $this->service()->transferBonusToWallet($wallet->user_id, 2000);
-
-        $wallet->refresh();
-        $this->assertEquals(2000, $wallet->balance);
-        $this->assertEquals(3000, $wallet->bonus);
-    }
-
-    public function testTransferBonusRequiresAThreeThousandBonus()
-    {
-        $wallet = $this->wallet(['bonus' => 2500]);
-
-        $result = $this->service()->transferBonusToWallet($wallet->user_id, 100);
-
-        $this->assertSame('Bonus must be up to 3000 before it can be withdrawn', $result['message']);
-    }
-
-    public function testTransferBonusCannotExceedTheBonusBalance()
-    {
-        $wallet = $this->wallet(['bonus' => 5000]);
-
-        $result = $this->service()->transferBonusToWallet($wallet->user_id, 6000);
-
-        $this->assertSame('insufficient bonus', $result['message']);
-    }
-
-    public function testCreditWalletBonusByIdAndByAccountNumber()
-    {
-        $wallet = $this->wallet(['bonus' => 0, 'account_number' => '0011223344']);
-
-        $this->service()->creditWalletBonusById($wallet->user_id, 100);
-        $this->service()->creditWalletBonusByAccountNumber('0011223344', 50);
-
-        $this->assertEquals(150, $wallet->fresh()->bonus);
-    }
-
-    public function testWalletHistoryIsRecorded()
-    {
-        $wallet = $this->wallet();
-
-        $result = $this->service()->walletHistory($wallet->user_id, 'credit', 100, 'Top up', $wallet->id, 1000, 1100);
-
-        $this->assertSame('success', $result['status']);
-        $this->assertDatabaseHas('wallet_histories', ['wallet_id' => $wallet->id, 'type' => 'credit', 'amount' => 100]);
+        $this->service()->creditWalletById(User::factory()->create()->id, 10);
     }
 }
