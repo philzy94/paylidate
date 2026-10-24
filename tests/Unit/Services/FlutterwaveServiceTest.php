@@ -149,4 +149,51 @@ class FlutterwaveServiceTest extends TestCase
 
         Http::assertSent(fn (Request $request) => $request->url() === 'https://flw.test/v3/transactions/998877/verify/');
     }
+
+    public function testVirtualCardEndpointsUseTheCardIdAndBearerAuth()
+    {
+        Http::fake(['flw.test/*' => Http::response(['status' => 'success'])]);
+        $service = new FlutterwaveService();
+
+        $service->withdrawFromVirtualCard('card-1', 500);
+        $service->fundVirtualCard('card-1', 700);
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://flw.test/v3/virtual-cards/card-1/withdraw'
+            && $request['amount'] === 500
+            && $request->hasHeader('Authorization', 'Bearer FLWSECK-testsecretkey12345'));
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://flw.test/v3/virtual-cards/card-1/fund'
+            && $request['amount'] === 700
+            && $request['debit_currency'] === 'NGN');
+    }
+
+    public function testPaymentLinkPostsTheCustomerAndRedirect()
+    {
+        Http::fake(['flw.test/*' => Http::response(['status' => 'success', 'data' => ['link' => 'https://pay.test/x']])]);
+
+        $response = (new FlutterwaveService())->getPaymentLink(
+            'Ada',
+            1500,
+            'NGN',
+            'https://app.test/done',
+            ['order' => 1],
+            ['email' => 'ada@test.test'],
+            ['title' => 'Paylidate']
+        );
+
+        $this->assertSame('https://pay.test/x', $response['data']['link']);
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://flw.test/v3/payments'
+            && $request['amount'] === 1500
+            && $request['redirect_url'] === 'https://app.test/done'
+            && $request['customer']['email'] === 'ada@test.test'
+            && str_starts_with($request['tx_ref'], 'Ada-tx-'));
+    }
+
+    public function testVirtualAccountLookupUsesTheOrderReference()
+    {
+        Http::fake(['flw.test/*' => Http::response(['status' => 'success'])]);
+
+        (new FlutterwaveService())->getVirtualAccount('URF_123');
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://flw.test/v3/virtual-account-numbers/URF_123');
+    }
 }

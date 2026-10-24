@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `LICENSE` (MIT), `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and pull request templates, `.mailmap`.
+- Architecture and API documentation under `docs/`.
+- Static analysis with PHPStan level 8 (Larastan) in CI and `composer analyse`.
+- Coverage report and a 90% minimum-coverage gate in CI.
+
+### Removed
+- Unreachable code: the `ThirdPartyApi` controllers (no routes pointed at them), the Providus NIP client
+  and its `PROVIDUS_*` settings, three unused notification classes and six unused mailables.
+
+### Changed
+- Eloquent relations and service signatures are fully typed.
+
 ## [1.1.0] - 2026-10-24
 
 ### Security
