@@ -64,7 +64,9 @@ composer test   # runs vendor/bin/phpunit
 | `app/*.php` | Eloquent models |
 
 More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (layers, transaction lifecycle, security model)
-and [docs/API.md](docs/API.md) (endpoint reference).
+[docs/API.md](docs/API.md) (endpoint reference), the machine-readable
+[docs/openapi.json](docs/openapi.json) (OpenAPI 3, regenerate with `php artisan paylidate:openapi`;
+a test fails when it drifts from the routes) and [docs/SECRETS.md](docs/SECRETS.md) (rotating keys).
 
 New business logic belongs in a service, not in a controller
 (see `TransactionController` + `TransactionService` for the pattern).
@@ -74,12 +76,13 @@ New business logic belongs in a service, not in a controller
 ```bash
 composer lint      # PSR-12 via phpcs (whole app, routes, tests and config)
 composer analyse   # PHPStan level 8 via Larastan
+composer complexity # PHPMD limits on method and class complexity
 composer test      # PHPUnit (see CONTRIBUTING.md for the workflow)
 composer check     # lint + analyse + test, what CI runs
 composer coverage  # tests with a coverage report (needs pcov or Xdebug)
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, static analysis, a dependency audit, the tests with a minimum-coverage gate (90%), the tests and a Docker build on
+CI (`.github/workflows/ci.yml`) runs lint, static analysis, a dependency audit, the tests with a minimum-coverage gate (95%), the tests and a Docker build on
 every push and pull request. Pushing a `v*` tag runs `release.yml`, which re-runs the checks,
 publishes the image to GitHub Container Registry and creates a GitHub release. Dependabot keeps dependencies and workflows
 up to date.

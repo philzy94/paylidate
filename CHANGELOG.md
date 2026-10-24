@@ -6,11 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-24
+
 ### Added
 - `LICENSE` (MIT), `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and pull request templates, `.mailmap`.
 - Architecture and API documentation under `docs/`.
 - Static analysis with PHPStan level 8 (Larastan) in CI and `composer analyse`.
-- Coverage report and a 90% minimum-coverage gate in CI.
+- Coverage report and a 95% minimum-coverage gate in CI.
+
+### Added (tooling)
+- `docs/openapi.json` generated from the routes by `php artisan paylidate:openapi`, with a test that fails on drift.
+- `docs/SECRETS.md` (rotation runbook), PHPMD complexity limits (`composer complexity`) and a commit-subject check on pull requests.
 
 ### Security
 - No credential is stored in the repository: test values are obviously fake, the test `APP_KEY` is generated per run,
@@ -22,6 +28,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 - Eloquent relations and service signatures are fully typed.
+- Large services were split to stay inside the PHPMD limits: `TransactionNotifier` (transaction emails) and
+  `PayoutTransferService` (staff-only bank transfers) were extracted, `WalletService` dropped its duplicated
+  array-returning methods in favour of typed exceptions, and long methods were broken into named steps.
+
+### Fixed
+- Partner API keys: `ThirdPartyApiMiddleware` queried an `API_key` column the `apikeys` table never had, which
+  failed with a 500 on MySQL. A migration adds the column.
+- Wallet and payout code no longer dereferences missing wallets, products or bank accounts.
 
 ## [1.1.0] - 2026-10-24
 
