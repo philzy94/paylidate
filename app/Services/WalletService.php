@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use App\Services\FlutterwaveService;
@@ -11,9 +12,10 @@ use App\WalletHistory;
 class WalletService
 {
     protected $FlutterwaveService;
-    public function __construct()
+
+    public function __construct(FlutterwaveService $flutterwaveService)
     {
-        $this->FlutterwaveService = new FlutterwaveService();
+        $this->FlutterwaveService = $flutterwaveService;
     }
 
     // create a virtual account and a user wallet
@@ -58,11 +60,12 @@ class WalletService
                     'message' => 'amount must be greater than 0'
                 ];
             }
-            $wallet = Wallet::where('user_id', $user_id)->first();
-            $balance =  $wallet->balance + $amount;
-            $wallet->update([
-                'balance' => $balance
-            ]);
+            $wallet = DB::transaction(function () use ($user_id, $amount) {
+                $wallet = Wallet::where('user_id', $user_id)->lockForUpdate()->firstOrFail();
+                $wallet->update(['balance' => $wallet->balance + $amount]);
+
+                return $wallet;
+            });
 
             return [
                 'status' => 'success',
@@ -111,31 +114,30 @@ class WalletService
                     'message' => 'amount must be greater than 0 NGN'
                 ];
             }
-            $wallet = Wallet::where('user_id', $user_id)->first();
+            return DB::transaction(function () use ($user_id, $amount) {
+                $wallet = Wallet::where('user_id', $user_id)->lockForUpdate()->first();
 
+                if (!$wallet) {
+                    return [
+                        'status' => 'error',
+                        'message' => "You don't have a wallet"
+                    ];
+                }
 
-            if (!$wallet) {
+                if ($wallet->balance - $amount < 0) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'insufficient fund'
+                    ];
+                }
+
+                $wallet->update(['balance' => $wallet->balance - $amount]);
+
                 return [
-                    'status' => 'error',
-                    'message' => "You don't have a wallet"
+                    'status' => 'success',
+                    'data' => $wallet
                 ];
-            }
-
-            if ($wallet->balance - $amount < 0) {
-                return [
-                    'status' => 'error',
-                    'message' => 'insufficient fund'
-                ];
-            }
-            $balance =  $wallet->balance - $amount;
-            $wallet->update([
-                'balance' => $balance
-            ]);
-
-            return [
-                'status' => 'success',
-                'data' => $wallet
-            ];
+            });
         } catch (\Exception $e) {
             report($e);
             return [

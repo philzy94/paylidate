@@ -7,10 +7,6 @@ use Illuminate\Support\Facades\Http;
 
 class FlutterwaveService
 {
-    public function __construct()
-    {
-    }
-
     public function virtualCard($currency, $amount, $name)
     {
         $response = Http::withHeaders([
@@ -118,33 +114,24 @@ class FlutterwaveService
     public function createVirtualAccount($email, $name, $tx_ref, $bvn)
     {
         try {
-            $header =  array(
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . config('services.flutterwave.secret_key')
-            );
-            $arr = array('email' => $email, 'is_permanent' => true, 'bvn' => $bvn, 'tx_ref' => $tx_ref, 'narration' => $name,);
-            $curl = curl_init();
-            $param = json_encode($arr);
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => config('services.flutterwave.base_url') . '/v3/virtual-account-numbers',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 0,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => $param,
-                CURLOPT_HTTPHEADER => $header,
-            ));
-            $response = curl_exec($curl);
-            curl_close($curl);
-            return json_decode($response);
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('services.flutterwave.secret_key'),
+            ])->post(config('services.flutterwave.base_url') . '/v3/virtual-account-numbers', [
+                'email' => $email,
+                'is_permanent' => true,
+                'bvn' => $bvn,
+                'tx_ref' => $tx_ref,
+                'narration' => $name,
+            ]);
+
+            return json_decode($response->body());
         } catch (\Exception $e) {
             report($e);
-            return json_decode($e);
+
+            return (object) ['status' => 'error', 'message' => 'An error occured. Please try again'];
         }
     }
+
     public function getVirtualAccount($order_ref)
     {
         $response = Http::withHeaders([
@@ -185,10 +172,6 @@ class FlutterwaveService
     public function payviacard($data)
     {
 
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
-
-
         $SecKey = config('services.flutterwave.secret_key');
 
         $key = $this->getKey($SecKey);
@@ -205,17 +188,13 @@ class FlutterwaveService
             'alg' => '3DES-24'
         ]);
 
-        $response = json_decode($response, true);
+        $response = $response->json();
 
         return $response;
     }
 
     public function validate_payment($flwRef, $otp)
     {
-
-        //validate Transaction with OTP
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
 
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
@@ -226,17 +205,13 @@ class FlutterwaveService
         ]);
 
 
-        $response = json_decode($response, true);
+        $response = $response->json();
 
         return $response;
     }
 
     public function verify_payment($txRef)
     {
-        //verify payment
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
-
         $response = Http::withHeaders([
             "Content-Type" => "application/json"
         ])->post(config('services.flutterwave.rave_base_url') . "/flwv3-pug/getpaidx/api/v2/verify", [
@@ -245,7 +220,7 @@ class FlutterwaveService
         ]);
 
 
-        $response = json_decode($response, true);
+        $response = $response->json();
 
         return $response;
     }
