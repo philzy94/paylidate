@@ -13,10 +13,11 @@ Follow the setup in [README.md](README.md) (`composer install`, copy `.env.examp
 composer lint      # PSR-12 via phpcs
 composer analyse   # PHPStan level 8 (Larastan); no baseline, no ignores
 composer test      # PHPUnit (SQLite in memory, external HTTP calls are faked)
-composer check     # all three
+composer complexity # PHPMD limits (cyclomatic complexity, method and class length)
+composer check     # all of the above
 ```
 
-All must exit 0, and coverage must stay at or above 90%; CI runs them on every push and pull request.
+All must exit 0, and coverage must stay at or above 95%; CI runs them on every push and pull request.
 
 ## Workflow
 
@@ -30,6 +31,14 @@ All must exit 0, and coverage must stay at or above 90%; CI runs them on every p
 5. Read secrets through `config()` (backed by `.env`); never commit credentials or API keys.
 6. Update [CHANGELOG.md](CHANGELOG.md) under *Unreleased*.
 7. Open a pull request describing what changed and how you tested it.
+
+## Commit messages
+
+- Subject: imperative, 12-72 characters, says what changed (`Verify make-payment with Flutterwave`),
+  not `fix` or `update`. A pull-request check enforces the length and rejects empty subjects.
+- Body (when the reason is not obvious): why the change was needed, not a restatement of the diff.
+- One logical change per commit; keep formatting-only and behaviour changes apart.
+- Releases are tagged `vMAJOR.MINOR.PATCH` and listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Reporting security issues
 
