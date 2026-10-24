@@ -44,14 +44,14 @@ class Transaction extends Model
 
     public function withdrawal()
     {
-        return $this->hasOnce('App\Withdrawal');
+        return $this->hasOne('App\Withdrawal');
     }
     public function refund()
     {
-        return $this->hasOnce('App\Refund');
+        return $this->hasOne('App\Refund');
     }
     public function fulfilment()
     {
-        return $this->hasOne('App\Fulfilment');
+        return $this->hasOne('App\Fulfillment');
     }
 }
