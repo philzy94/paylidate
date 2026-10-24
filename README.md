@@ -26,17 +26,31 @@ php artisan passport:keys
 php artisan passport:client --personal
 ```
 
-Serve locally with `php artisan serve`, or run everything in containers:
+Serve locally with `php artisan serve`. The API is on http://localhost:8000 and all
+endpoints live under `/api`.
+
+### Docker
 
 ```bash
 cp .env.example .env
+sed -i.bak "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env   # fill in the other secrets too
 docker compose up --build -d
-docker compose exec app php artisan key:generate
-docker compose exec app php artisan migrate
-docker compose exec app php artisan passport:keys
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan passport:keys --force
+docker compose exec app php artisan passport:client --personal --name=Paylidate --provider=users --no-interaction
 ```
 
-The API is then on http://localhost:8000. All endpoints live under `/api`.
+The API is then on http://localhost:8000 (MySQL runs in the `db` service).
+
+### Running the tests
+
+The suite uses an in-memory SQLite database and fakes every external HTTP call, so it needs
+no `.env`, database server or network:
+
+```bash
+composer install
+composer test   # runs vendor/bin/phpunit
+```
 
 ## Architecture
 
@@ -44,22 +58,24 @@ The API is then on http://localhost:8000. All endpoints live under `/api`.
 | --- | --- |
 | `routes/api.php` | Route definitions (first-party API and the third-party API) |
 | `app/Http/Controllers/Api` | Thin HTTP layer: validate input, call services, shape the response |
-| `app/Http/Controllers/ThirdPartyApi` | Same API authenticated by API key for integrators |
-| `app/Services` | Business logic (`PaymentService`, `WalletService`, `RefundService`, `FlutterwaveService`, ...) |
+| `app/Http/Controllers/ThirdPartyApi` | Third-party (API key) entry points; most extend the `Api` controllers |
+| `app/Services` | Business logic (`AuthService`, `TransactionService`, `PaymentService`, `WalletService`, `FlutterwaveService`, ...) |
+| `app/Exceptions` | Typed domain errors rendered as JSON (`AppException` and subclasses) |
 | `app/*.php` | Eloquent models |
 
 New business logic belongs in a service, not in a controller
-(see `PaymentController` + `PaymentService` for the pattern).
+(see `TransactionController` + `TransactionService` for the pattern).
 
 ## Development
 
 ```bash
 composer lint   # PSR-12 via phpcs (whole app, routes, tests and config)
-composer test   # PHPUnit
+composer test   # PHPUnit (see CONTRIBUTING.md for the workflow)
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, a dependency audit and the tests on
-every push and pull request. Dependabot keeps dependencies and workflows
+CI (`.github/workflows/ci.yml`) runs lint, a dependency audit, the tests and a Docker build on
+every push and pull request. Pushing a `v*` tag runs `release.yml`, which re-runs the checks,
+publishes the image to GitHub Container Registry and creates a GitHub release. Dependabot keeps dependencies and workflows
 up to date.
 
 ## Security
