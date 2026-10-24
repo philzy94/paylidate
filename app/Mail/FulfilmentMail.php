@@ -12,16 +12,17 @@ class FulfilmentMail extends Mailable
     use Queueable;
     use SerializesModels;
 
-    public $user;
-    public $data;
-    public $transaction;
+    public string $user;
+    public string $data;
+    /** @var array<string, mixed> */
+    public array $transaction;
 
     /**
      * Create a new message instance.
      *
-     * @return void
+     * @param  array<string, mixed>  $transaction
      */
-    public function __construct($user, $data, $transaction)
+    public function __construct(string $user, string $data, array $transaction)
     {
         $this->user = $user;
         $this->data = $data;
@@ -33,7 +34,7 @@ class FulfilmentMail extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('hello@paylidate.com', 'Paylidate')->view('mails.fulfilment');
     }

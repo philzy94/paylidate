@@ -13,14 +13,14 @@ class WalletCreated extends Mailable
     use Queueable;
     use SerializesModels;
 
-    public $user;
+    public string $user;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($user)
+    public function __construct(string $user)
     {
         //
         $this->user = $user;
@@ -31,7 +31,7 @@ class WalletCreated extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('hello@paylidate.com', 'Paylidate')->view('mails.wallet_created');
     }

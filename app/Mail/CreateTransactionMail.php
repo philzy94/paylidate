@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -12,16 +13,16 @@ class CreateTransactionMail extends Mailable
     use Queueable;
     use SerializesModels;
 
+    public User $user;
+    /** @var array<string, mixed> */
+    public array $transaction;
+
     /**
      * Create a new message instance.
      *
-     * @return void
+     * @param  array<string, mixed>  $transaction
      */
-
-    public $user;
-    public $transaction;
-
-    public function __construct($user, $transaction)
+    public function __construct(User $user, array $transaction)
     {
 
         $this->user = $user;
@@ -33,7 +34,7 @@ class CreateTransactionMail extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('hello@paylidate.com', 'Paylidate')
         ->subject('New transaction')->view('mails.create_transaction');

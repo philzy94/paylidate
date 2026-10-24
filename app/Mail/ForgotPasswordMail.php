@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -12,14 +13,14 @@ class ForgotPasswordMail extends Mailable
     use Queueable;
      use SerializesModels;
 
-    public $user;
-    public $passwordResetLink;
+    public User $user;
+    public string $passwordResetLink;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($user, $passwordResetLink)
+    public function __construct(User $user, string $passwordResetLink)
     {
         $this->user = $user;
         $this->passwordResetLink = $passwordResetLink;
@@ -30,7 +31,7 @@ class ForgotPasswordMail extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('no_reply@paylidate.com', 'Paylidate')
         ->subject('Reset Pasword')->view('mails.forgot_password');

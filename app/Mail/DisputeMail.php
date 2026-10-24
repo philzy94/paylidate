@@ -12,17 +12,17 @@ class DisputeMail extends Mailable
     use Queueable;
     use SerializesModels;
 
-    public $subject;
-    public $user;
-    public $transaction;
-    public $dispute;
+    public string $user;
+    /** @var array<string, mixed> */
+    public array $transaction;
+    public string $dispute;
 
     /**
      * Create a new message instance.
      *
-     * @return void
+     * @param  array<string, mixed>  $transaction
      */
-    public function __construct($subject, $dispute, $transaction, $user)
+    public function __construct(string $subject, string $dispute, array $transaction, string $user)
     {
 
         $this->subject = $subject;
@@ -35,7 +35,7 @@ class DisputeMail extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
 
         return $this->from('hello@paylidate.com', 'Paylidate')

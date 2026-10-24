@@ -12,17 +12,17 @@ class SellerAcceptTransactionMail extends Mailable
     use Queueable;
     use SerializesModels;
 
+    public string $secondary_email;
+    public string $email;
+    /** @var array<string, mixed> */
+    public array $transaction;
+
     /**
      * Create a new message instance.
      *
-     * @return void
+     * @param  array<string, mixed>  $transaction
      */
-
-    public $secondary_email;
-    public $email;
-    public $transaction;
-
-    public function __construct($secondary_email, $email, $transaction)
+    public function __construct(string $secondary_email, string $email, array $transaction)
     {
 
         $this->secondary_email = $secondary_email;
@@ -35,7 +35,7 @@ class SellerAcceptTransactionMail extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('hello@paylidate.com', 'Paylidate')
         ->subject('Review and accept transaction terms')->view('mails.seller_accept_transaction');

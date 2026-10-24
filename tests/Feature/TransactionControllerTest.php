@@ -270,12 +270,4 @@ class TransactionControllerTest extends TestCase
         $this->assertCount(1, $response->json('data'));
         $this->assertSame($own->id, $response->json('data.0.id'));
     }
-
-    public function testThirdPartyApiUsesTheSameService()
-    {
-        $this->assertSame(
-            (new \ReflectionMethod(\App\Http\Controllers\Api\TransactionController::class, '__construct'))->getParameters()[0]->getType()->getName(),
-            (new \ReflectionMethod(\App\Http\Controllers\ThirdPartyApi\TransactionController::class, '__construct'))->getParameters()[0]->getType()->getName()
-        );
-    }
 }

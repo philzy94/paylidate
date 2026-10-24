@@ -2,6 +2,8 @@
 
 namespace App\Mail;
 
+use App\Product;
+use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -12,14 +14,14 @@ class CreateProductMail extends Mailable
     use Queueable;
     use SerializesModels;
 
-    public $user;
-    public $product;
+    public User $user;
+    public Product $product;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($user, $product)
+    public function __construct(User $user, Product $product)
     {
         $this->user = $user;
         $this->product = $product;
@@ -30,7 +32,7 @@ class CreateProductMail extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->view('mails.create_product');
     }

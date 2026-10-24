@@ -17,10 +17,10 @@ class RequestWithdrawal extends Mailable
      *
      * @return void
      */
-    public $user_name;
-    public $transaction_id;
+    public string $user_name;
+    public int|string $transaction_id;
 
-    public function __construct($user_name, $transaction_id)
+    public function __construct(string $user_name, int|string $transaction_id)
     {
 
         $this->user_name = $user_name;
@@ -32,7 +32,7 @@ class RequestWithdrawal extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('hello@paylidate.com', 'Paylidate')
         ->subject('Withdrawal Request')->view('mails.request_withdrawal');

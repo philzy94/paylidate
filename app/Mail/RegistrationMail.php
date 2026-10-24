@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -12,14 +13,14 @@ class RegistrationMail extends Mailable implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public $user;
-    public $verifyEmailLink;
+    public User $user;
+    public string $verifyEmailLink;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($user, $verifyEmailLink)
+    public function __construct(User $user, string $verifyEmailLink)
     {
         $this->user = $user;
         $this->verifyEmailLink = $verifyEmailLink;
@@ -30,7 +31,7 @@ class RegistrationMail extends Mailable implements ShouldQueue
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('paylidatesupport@lotusfort.com', 'Paylidate')
         ->subject('Verify Email')->view('mails.registration');

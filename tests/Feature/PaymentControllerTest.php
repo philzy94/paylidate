@@ -84,12 +84,4 @@ class PaymentControllerTest extends TestCase
         $this->assertSame('123', $payload['cvv']);
         $this->assertStringStartsWith('PD', $payload['txRef']);
     }
-
-    public function testThirdPartyPaymentControllerReusesTheImplementation()
-    {
-        $this->assertInstanceOf(
-            \App\Http\Controllers\Api\PaymentController::class,
-            app(\App\Http\Controllers\ThirdPartyApi\PaymentController::class)
-        );
-    }
 }

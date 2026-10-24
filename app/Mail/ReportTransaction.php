@@ -17,12 +17,12 @@ class ReportTransaction extends Mailable
      *
      * @return void
      */
-    public $user_name;
-    public $type;
-    public $report;
-    public $transaction_ref;
+    public ?string $user_name;
+    public string $type;
+    public ?string $report;
+    public string $transaction_ref;
 
-    public function __construct($user_name, $transaction_ref, $type, $report = null)
+    public function __construct(?string $user_name, string $transaction_ref, string $type, ?string $report = null)
     {
 
         $this->user_name = $user_name;
@@ -36,7 +36,7 @@ class ReportTransaction extends Mailable
      *
      * @return $this
      */
-    public function build()
+    public function build(): static
     {
         return $this->from('hello@paylidate.com', 'Paylidate')
         ->subject('Report Transaction')->view('mails.report_transaction');
